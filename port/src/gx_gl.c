@@ -2079,6 +2079,22 @@ static void rt_skin_src(const RFrame *fr, const XfSeg *sg) {
     }
 }
 
+#if defined(PORT_VITA) && defined(__ARM_NEON)
+/* The ring vertices live in GPU-mapped memory the CPU writes uncached: write
+ * each 36-byte vertex as three sequential, non-overlapping stores (the old
+ * overlapping 16-byte stores plus byte/float stores made the render thread's
+ * transform cost ~0.4 us a vertex, 22-36 ms a frame in busy scenes). */
+static inline void rt_store_vtx(GLVertex *d, float32x4_t p, float32x4_t r, u32 clr32, float t0, float t1) {
+    float32x4_t q0 = vsetq_lane_f32(vgetq_lane_f32(r, 0), p, 3); /* x y z nx */
+    float32x4_t q1 = vextq_f32(r, r, 1);                         /* ny nz - - */
+    uint32x4_t u1 = vsetq_lane_u32(clr32, vreinterpretq_u32_f32(q1), 2);
+    q1 = vsetq_lane_f32(t0, vreinterpretq_f32_u32(u1), 3);       /* ny nz clr u */
+    vst1q_f32(&d->pos[0], q0);
+    vst1q_f32(&d->nrm[1], q1);
+    d->tex[1] = t1;
+}
+#endif
+
 /* render thread: convert + view-transform a vertex range straight from the
  * game's source vertices (draw_indexed_range, deferred copy) */
 static void rt_copy_xf(const RFrame *fr, const XfSeg *sg) {
@@ -2099,14 +2115,7 @@ static void rt_copy_xf(const RFrame *fr, const XfSeg *sg) {
         float32x4_t p = vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(c3, c0, sv->x), c1, sv->y), c2, sv->z);
         float32x4_t r = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(n0, sv->nx), n1, sv->ny), n2, sv->nz);
         u32 c = constcol ? col : sv->diffuse;
-        vst1q_f32(d->pos, p); /* lane 3 lands in nrm[0], rewritten next */
-        vst1q_f32(d->nrm, r); /* lane 3 lands in clr, written next */
-        d->clr[0] = (u8)(c >> 24);
-        d->clr[1] = (u8)(c >> 16);
-        d->clr[2] = (u8)(c >> 8);
-        d->clr[3] = (u8)c;
-        d->tex[0] = sv->u;
-        d->tex[1] = sv->v;
+        rt_store_vtx(d, p, r, __builtin_bswap32(c), sv->u, sv->v); /* clr bytes R,G,B,A */
     }
 #else
     const float (*m)[4] = sg->m;
@@ -2163,11 +2172,7 @@ static void rt_transform(int f, int vend) {
             u32 clr;
             float t0 = sp->tex[0], t1 = sp->tex[1];
             memcpy(&clr, sp->clr, 4);
-            vst1q_f32(d->pos, p); /* lane 3 lands in nrm[0], rewritten next */
-            vst1q_f32(d->nrm, r); /* lane 3 lands in clr, written next */
-            memcpy(d->clr, &clr, 4);
-            d->tex[0] = t0;
-            d->tex[1] = t1;
+            rt_store_vtx(d, p, r, clr, t0, t1);
         }
 #else
         const float (*m)[4] = sg->m;
