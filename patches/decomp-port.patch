@@ -1012,7 +1012,7 @@ index 58377dc..5be21e3 100644
      float remaining;
      
 diff --git a/src/gamecode/deb3.c b/src/gamecode/deb3.c
-index 14000df..859e81d 100644
+index 14000df..c6c768d 100644
 --- a/src/gamecode/deb3.c
 +++ b/src/gamecode/deb3.c
 @@ -129,8 +129,14 @@ s32 StartHGobjAnim(struct nuhspecial_s *obj);
@@ -1032,7 +1032,26 @@ index 14000df..859e81d 100644
  
  struct rbclass_s rbclass[5];
  volatile ELEC H2OElec[22];
-@@ -650,7 +656,11 @@ void JonExtraDraw(void) {
+@@ -619,6 +625,18 @@ void JonExtraDraw(void) {
+     s32 d;
+     s32 col;
+     struct nuvec_s vec;
++#ifdef PORT
++    { /* debug aid (CWOC_ARCTEST=1): an arc laser in front of the player every frame */
++        static int arct = -1;
++        if (arct < 0) arct = getenv("CWOC_ARCTEST") != NULL;
++        if (arct && player != NULL && Paused == 0) {
++            struct nuvec_s a = player->obj.pos, b = player->obj.pos, dir = {0.3f, 0.0f, 0.3f};
++            a.y += 0.5f; b.y += 3.0f; a.x -= 1.5f; b.x += 1.5f;
++            NuLgtArcLaser(0, &a, &b, &dir, 0.1f, 0.1f, 0.01f, 0.3f, 0x80FF7F3F);
++            NuLgtArcLaser(0, &a, &b, &dir, 0.4f, 0.3f, 0.001f, 0.3f, 0x80800040);
++        }
++    }
++#endif
+ 
+     if (Level == 0x19) {
+         switch (cmask) {
+@@ -650,7 +668,11 @@ void JonExtraDraw(void) {
          vec.y += (NuTrigTable[(u16)(masky / 0x3c)] * 0.75f);
          vec.z = NuTrigTable[(u16)((maskx / 0x3c) + 0x4000)] * 3.0f + vec.z;
          if (i != -1) {
@@ -1044,7 +1063,7 @@ index 14000df..859e81d 100644
              vec.y += 0.2f;
              if (Paused == 0) {
                  AddVariableShotDebrisEffect(GDeb[d].i, &vec, 1, 0, 0);
-@@ -698,7 +708,10 @@ void JonExtraDraw(void) {
+@@ -698,7 +720,10 @@ void JonExtraDraw(void) {
  }
  
  //NGC MATCH
@@ -5370,10 +5389,32 @@ index 8a24380..0c419a1 100644
      return;
  }
 diff --git a/src/system/gs/gs.h b/src/system/gs/gs.h
-index 955d883..593cfb6 100644
+index 955d883..6e77f6e 100644
 --- a/src/system/gs/gs.h
 +++ b/src/system/gs/gs.h
-@@ -333,7 +333,10 @@ struct _GS_FrameBufferCopy
+@@ -144,10 +144,21 @@ struct _GS_VECTOR4
+ };
+ 
+ struct _GS_VIEWPORT {
++#ifdef PORT
++    /* PORT: GameCube "ulong" is 32 bits. nuvport.c copies this into the
++     * 32-bit nuviewport_s; with u64 fields it got width/height 0, the screen
++     * scaling matrix (vpcsmtx) stayed zero and every screen-space effect drawn
++     * through it (arc lasers / electric beams) collapsed to (0,0). */
++    u32 X;
++    u32 Y;
++    u32 width;
++    u32 height;
++#else
+     u64 X;
+     u64 Y;
+     u64 width;
+     u64 height;
++#endif
+     float MinZ;
+     float MaxZ;
+ };
+@@ -333,7 +344,10 @@ struct _GS_FrameBufferCopy
  struct _GS_FrameBufferCopy GS_FrameBufferCopyPause;
  void* GS_FrameBufferCopydataptr;
  u32 GS_FrameBufferCopySize;
