@@ -148,6 +148,18 @@ void port_platform_init(int argc, char **argv) {
     g_last_report = SDL_GetTicks();
 }
 
+/* sampled sub-timers for the material pass (numtl.c / nurndr.c MSUB_*) */
+uint64_t g_msub[8];
+static uint64_t g_msub_t0[8];
+static unsigned g_msub_c[8], g_msub_r[8];
+void port_msub_begin(int k, int rate) {
+    g_msub_r[k] = (unsigned)rate;
+    g_msub_t0[k] = (++g_msub_c[k] % (unsigned)rate) == 0 ? port_prof_now() : 0;
+}
+void port_msub_end(int k) {
+    if (g_msub_t0[k]) g_msub[k] += (port_prof_now() - g_msub_t0[k]) * g_msub_r[k];
+}
+
 void port_gx_stats_draw(int nverts) {
     g_draws++;
     g_verts += nverts;
@@ -319,6 +331,14 @@ static void prof_report(int nf, uint64_t span) {
             }
             n += snprintf(buf + n, sizeof(buf) - n, " idxcache %u/%u", g_idxc_hit / (unsigned)nf, g_idxc_miss / (unsigned)nf);
             g_idxc_hit = g_idxc_miss = 0;
+            {
+                static const char *mn[8] = {"m3d", "mstate", "wmtx", "shsetup", "draw", "ot", "other", "item"};
+                n += snprintf(buf + n, sizeof(buf) - n, " | mtl:");
+                for (i = 0; i < 8; i++) {
+                    n += snprintf(buf + n, sizeof(buf) - n, " %s %.1f", mn[i], g_msub[i] / 1000.0 / nf);
+                    g_msub[i] = 0;
+                }
+            }
         }
         for (i = 0; i < 40; i++) port_tb_us[i] = 0, port_tb_n[i] = 0;
         port_log("%s", buf);

@@ -3676,7 +3676,7 @@ index 61054f6..62a4d58 100644
      memset(&light[id],0,100);
      NuMtxSetIdentity((struct Mtx *)&light[id].light.mtx);
 diff --git a/src/nu3dx/numtl.c b/src/nu3dx/numtl.c
-index 9685b8c..1ce3699 100644
+index 9685b8c..25b1b21 100644
 --- a/src/nu3dx/numtl.c
 +++ b/src/nu3dx/numtl.c
 @@ -200,6 +200,9 @@ struct numtl_s * NuMtlRead(s32 fh) {
@@ -3689,8 +3689,83 @@ index 9685b8c..1ce3699 100644
    return mtl;
  }
  
+@@ -457,11 +460,23 @@ LAB_800b3394:
+   return;
+ }
+ 
++#ifdef PORT
++void port_msub_begin(int k, int rate);
++void port_msub_end(int k);
++#define MSUB_B(k, r) port_msub_begin(k, r)
++#define MSUB_E(k) port_msub_end(k)
++#else
++#define MSUB_B(k, r)
++#define MSUB_E(k)
++#endif
+ //NGC MATCH
+ void NuMtlRender(void) {
+   DBTimerStart(0x13);
++  MSUB_B(0, 1);
+   NuMtlRender3d();
++  MSUB_E(0);
+   DBTimerEnd(0x13);
++  MSUB_B(6, 1);
+   DBTimerStart(0x12);
+   DBTimerEnd(0x12);
+   DBTimerStart(0x11);
+@@ -469,9 +484,13 @@ void NuMtlRender(void) {
+   DBTimerStart(0x10);
+   NuMtlRenderDynamic2d3d();
+   DBTimerEnd(0x10);
++  MSUB_E(6);
++  MSUB_B(5, 1);
+   DBTimerStart(0xf);
+   NuMtlRenderOT(0,10);
+   DBTimerEnd(0xf);
++  MSUB_E(5);
++  MSUB_B(6, 1);
+   DBTimerStart(0xe);
+   NuMtlRenderFaceOn();
+   DBTimerEnd(0xe);
+@@ -484,15 +503,20 @@ void NuMtlRender(void) {
+   DBTimerStart(10);
+   NuMtlRenderWater();
+   DBTimerEnd(10);
++  MSUB_E(6);
++  MSUB_B(5, 1);
+   DBTimerStart(9);
+   NuMtlRenderOT(0xb,0x100);
+   DBTimerEnd(9);
++  MSUB_E(5);
++  MSUB_B(6, 1);
+   DBTimerStart(8);
+   DrawStencilShadowQuad();
+   DBTimerEnd(8);
+   DBTimerStart(7);
+   NuMtlRenderUpd();
+   DBTimerEnd(7);
++  MSUB_E(6);
+   return;
+ }
+ 
+@@ -504,11 +528,15 @@ static void NuMtlRender3d(void) {
+   GS_SetAlphaCompare(7,0);
+   for (sm = smlist; sm != NULL; sm = sm->next) {
+     if (((sm->mtl).L == '\0') && (sm->rndrlist != NULL)) {
++      MSUB_B(1, 4);
+       NuTexSetTexture(0,(sm->mtl).tid);
+       NuMtlSetRenderStates(&sm->mtl);
+       NuTexSetTextureStates(&sm->mtl);
++      MSUB_E(1);
+       for (ri = sm->rndrlist; ri != NULL; ri = ri->next) {
++        MSUB_B(7, 8);
+         NuRndrItem(ri);
++        MSUB_E(7);
+       }
+       sm->rndrlist = NULL;
+     }
 diff --git a/src/nu3dx/nurndr.c b/src/nu3dx/nurndr.c
-index b2137e9..fc2b069 100644
+index b2137e9..31a020f 100644
 --- a/src/nu3dx/nurndr.c
 +++ b/src/nu3dx/nurndr.c
 @@ -12,7 +12,11 @@
@@ -3747,7 +3822,47 @@ index b2137e9..fc2b069 100644
          vtx--;
      }
      
-@@ -703,6 +727,25 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+@@ -650,17 +674,31 @@ void NuRndrFaceItem(struct nugeomitem_s* item) {
+ }
+ 
+ //MATCH GCN
++#ifdef PORT
++void port_msub_begin(int k, int rate);
++void port_msub_end(int k);
++#define MSUB_B(k, r) port_msub_begin(k, r)
++#define MSUB_E(k) port_msub_end(k)
++#else
++#define MSUB_B(k, r)
++#define MSUB_E(k)
++#endif
+ static void NuRndrGeomItem(struct nugeomitem_s *item) {
+   struct nuprim_s *prim;
+ 
+   DBTimerStart(6);
++  MSUB_B(2, 8);
+   if ((struct _GSMATRIX *)item->mtx != NULL) {
+     GS_SetWorldMatrix((struct _GSMATRIX *)item->mtx);
+   }
+   else {
+     GS_LoadWorldMatrixIdentity();
+   }
++  MSUB_E(2);
++  MSUB_B(3, 8);
+   SetupShaders(item);
++  MSUB_E(3);
++  MSUB_B(4, 8);
+   for (prim = item->geom->prim; prim != NULL; prim = prim->next) {
+           switch (prim->type) {
+               case NUPT_POINT:
+@@ -685,6 +723,7 @@ static void NuRndrGeomItem(struct nugeomitem_s *item) {
+               break;
+           }
+   }
++  MSUB_E(4);
+   DBTimerEnd(6);
+   return;
+ }
+@@ -703,6 +742,25 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
  
    blendgeom = item->geom->blendgeom;
    DBTimerStart(4);
@@ -5465,7 +5580,7 @@ index 5dc1fb8..6281ae5 100644
      if (NUID - 0x270eU > 1) {
      NUID--;
 diff --git a/src/system/port.c b/src/system/port.c
-index 8547093..b9cb0ad 100644
+index 8547093..ad8cd7c 100644
 --- a/src/system/port.c
 +++ b/src/system/port.c
 @@ -337,6 +337,14 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
@@ -5483,7 +5598,41 @@ index 8547093..b9cb0ad 100644
      mtl = geomitem->geom->mtl;
      vtxtype = geomitem->geom->vtxtype;
      if (mtl != NULL) {
-@@ -539,7 +547,11 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+@@ -362,6 +370,25 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+         matWorld = *geomitem->mtx;
+     }
+ 
++#ifdef PORT
++    /* PORT: the inverses, projections and transposes only feed the special
++     * shaders' constants; plain items (NO_SHADER, nearly all of them) only need
++     * the light matrices. Two 4x4 inverses per item cost ~1/3 of the material
++     * pass on the Vita with ~850 items a frame. */
++    NuMtxMulH(&matWorldView, &matWorld, &matView);
++    GS_LightViewMat = *(struct _GSMATRIX*) &matView;
++    GS_LightMat = *(struct _GSMATRIX*) &matWorldView;
++    if (shader != NO_SHADER) {
++        NuMtxInv(&invWorld, &matWorld);
++        NuMtxInv(&invWorldView, &matWorldView);
++        NuMtxMulH(&matWorldViewProj, &matWorldView, &matProj);
++        NuMtxMulH(&matViewProj, &matView, &matProj);
++        NuMtxTranspose(&matWorldViewProj, &matWorldViewProj);
++        NuMtxTranspose(&matViewProj, &matViewProj);
++        NuMtxTranspose(&matWorldView, &matWorldView);
++        NuMtxTranspose(&matWorld, &matWorld);
++    }
++#else
+     NuMtxInv(&invWorld, &matWorld);
+     NuMtxMulH(&matWorldView, &matWorld, &matView);
+     NuMtxInv(&invWorldView, &matWorldView);
+@@ -375,6 +402,7 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+     NuMtxTranspose(&matViewProj, &matViewProj);
+     NuMtxTranspose(&matWorldView, &matWorldView);
+     NuMtxTranspose(&matWorld, &matWorld);
++#endif
+     GS_SetLightingNone();
+     currentshader = shader;
+ 
+@@ -539,7 +567,11 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
          case BLENDSKINGLASS2: // 18
              CV_WORLDVIEWPROJ = *(struct _GSMATRIX*) &matViewProj;
              CV_WORLDVIEW = *(struct _GSMATRIX*) &matWorld;

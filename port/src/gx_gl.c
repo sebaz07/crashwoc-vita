@@ -2112,6 +2112,9 @@ static void rt_copy_xf(const RFrame *fr, const XfSeg *sg) {
     const float32x4_t n1 = { sg->q[0][1], sg->q[1][1], sg->q[2][1], 0.0f };
     const float32x4_t n2 = { sg->q[0][2], sg->q[1][2], sg->q[2][2], 0.0f };
     for (; d < e; d++, sv++) {
+        /* memory-latency bound (~0.4 us a vertex on the Vita): fetch ahead */
+        __builtin_prefetch(sv + 8, 0, 0);
+        __builtin_prefetch(d + 8, 1, 0);
         float32x4_t p = vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(c3, c0, sv->x), c1, sv->y), c2, sv->z);
         float32x4_t r = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(n0, sv->nx), n1, sv->ny), n2, sv->nz);
         u32 c = constcol ? col : sv->diffuse;
@@ -2167,6 +2170,8 @@ static void rt_transform(int f, int vend) {
         const float32x4_t n1 = { sg->q[0][1], sg->q[1][1], sg->q[2][1], 0.0f };
         const float32x4_t n2 = { sg->q[0][2], sg->q[1][2], sg->q[2][2], 0.0f };
         for (; d < e; d++, sp++) {
+            __builtin_prefetch(sp + 8, 0, 0);
+            __builtin_prefetch(d + 8, 1, 0);
             float32x4_t p = vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(c3, c0, sp->pos[0]), c1, sp->pos[1]), c2, sp->pos[2]);
             float32x4_t r = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(n0, sp->nrm[0]), n1, sp->nrm[1]), n2, sp->nrm[2]);
             u32 clr;
