@@ -18,6 +18,7 @@ enum {
     PROF_RT_TEX,   /* texture uploads */
     PROF_RT_COPY,  /* EFB copies (glReadPixels) */
     PROF_RT_SWAP,  /* present (waits for the GPU) */
+    PROF_RT_XF,    /* view transform of the recorded vertices */
     PROF_N
 };
 

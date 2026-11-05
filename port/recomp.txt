@@ -306,7 +306,7 @@ DebrisRegisterCutoffCameraVec
 CameraEmitterDistance
 DebrisCollisionCheck
 NuRndrParticleGroup
-renderpsdma
+# renderpsdma: native (PORT batches its quads into one GX block)
 GenericDebinfoDmaTypeUpdate
 CreateDmaParticleSet
 CreateDmaPartEffectList

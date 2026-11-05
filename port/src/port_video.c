@@ -278,7 +278,7 @@ uint64_t port_prof_now(void) {
 
 static void prof_report(int nf, uint64_t span) {
     static const char *names[PROF_N] = {"block", "capture", "verts", "shader", "texhash", "texdecode", "wait",
-                                        "rt_draw", "rt_tex", "rt_copy", "rt_swap"};
+                                        "rt_draw", "rt_tex", "rt_copy", "rt_swap", "rt_xf"};
     char buf[1024];
     int i, n = 0, threaded = port_gx_render_threaded();
     uint64_t sum = 0, rt = 0;

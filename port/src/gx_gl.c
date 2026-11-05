@@ -498,13 +498,25 @@ static int atest_pass(int comp, int a, int r) {
     }
 }
 static int atest_redundant(void) {
+    /* the compare only depends on 5 values: remember the last answer (this runs
+     * for every state capture, and the 255-step scan cost ~10% of the gx CPU
+     * time with particles) */
+    static u32 last_in = 0xFFFFFFFFu;
+    static int last_out;
+    u32 in;
     int a;
     if (gx.blend_type != 1 || gx.blend_src != 4 || (gx.z_enable && gx.z_update)) return 0;
+    in = (u32)gx.alpha_comp0 | (u32)gx.alpha_comp1 << 3 | (u32)gx.alpha_op << 6 |
+         (u32)(gx.alpha_ref0 & 0xFF) << 8 | (u32)(gx.alpha_ref1 & 0xFF) << 16;
+    if (in == last_in) return last_out;
+    last_in = in;
+    last_out = 0;
     for (a = 1; a < 256; a++) {
         int t0 = atest_pass(gx.alpha_comp0, a, gx.alpha_ref0), t1 = atest_pass(gx.alpha_comp1, a, gx.alpha_ref1);
         int ok = gx.alpha_op == 0 ? (t0 && t1) : gx.alpha_op == 1 ? (t0 || t1) : gx.alpha_op == 2 ? (t0 != t1) : (t0 == t1);
         if (!ok) return 0;
     }
+    last_out = 1;
     return 1;
 }
 
@@ -2188,7 +2200,12 @@ static void exec_cmds(int f, int from, int to) {
         case CMD_DRAW: {
             uint64_t t0 = port_prof_now();
             const BatchState *st = &fr->st[c->u.draw.st];
+            uint64_t t1;
             rt_transform(f, c->u.draw.voff + c->u.draw.nv);
+            t1 = port_prof_now();
+            g_prof[PROF_RT_XF] += t1 - t0;
+            g_prof_cnt[PROF_RT_XF]++;
+            t0 = t1;
             gl_draw(c->u.draw.sh, st, c->u.draw.texslot, c->u.draw.mode, g_rt_out + c->u.draw.voff, c->u.draw.nv,
                     c->u.draw.ni ? fr->ix + c->u.draw.ioff : NULL, c->u.draw.ni);
             g_prof[PROF_RT_DRAW] += port_prof_now() - t0;

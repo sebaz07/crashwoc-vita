@@ -4829,7 +4829,7 @@ index b083bf8..a8e0e98 100644
      if (Level == 3) goto fade_50;
      goto check_vehicle;
 diff --git a/src/nuxbox/dummyfunc.c b/src/nuxbox/dummyfunc.c
-index 18d4ff2..1407e55 100644
+index 18d4ff2..54fa448 100644
 --- a/src/nuxbox/dummyfunc.c
 +++ b/src/nuxbox/dummyfunc.c
 @@ -4,6 +4,13 @@
@@ -4871,7 +4871,68 @@ index 18d4ff2..1407e55 100644
      return (void *)addrAligned;
  }
  
-@@ -1435,8 +1450,16 @@ static s32 XboxEffectSystemInitialised;
+@@ -1227,6 +1242,60 @@ void* renderpsdma(s32 count, struct rdata_s* rdata, struct PartHeader_testretail
+     v1 = setup->v1;
+ 
+     hpdat = setup->Data;
++#ifdef PORT
++    {
++        /* PORT: same particles, one GX block per call instead of one per quad.
++         * Each GXBegin costs a full block decode in the port (the particle
++         * stage took ~11-13 ms a frame on the Vita with 2-3k quads). */
++        struct nuvec_s qp[32][4];
++        u32 qc[32];
++        s32 nq = 0;
++        for (i = 0; i < 32; i++) {
++            if (rdeb->etime < 0.0f) {
++                rdeb++;
++                continue;
++            }
++            elapsed = (time - rdeb->time);
++            index = (rdeb->etime * elapsed);
++            if (index > 0x3FU) {
++                rdeb->etime = -1.0f;
++                rdeb++;
++                continue;
++            }
++            {
++                float f11 = grav * elapsed;
++                struct nuvec_s *q = qp[nq];
++                pdat = &hpdat[index];
++                pdatpt = pdat->vt;
++                debmtx._30 = (rdeb->mx * elapsed + rdeb->x) + wm->_30;
++                debmtx._32 = (rdeb->mz * elapsed + rdeb->z) + wm->_32;
++                debmtx._31 = f11 * elapsed + ((rdeb->my * elapsed + rdeb->y) + wm->_31);
++                rdeb++;
++                DebMtxTransform(&q[0], &pdatpt[0]);
++                DebMtxTransform(&q[1], &pdatpt[1]);
++                DebMtxTransform(&q[2], &pdatpt[2]);
++                q[3].x = (q[2].x - q[1].x) + q[0].x;
++                q[3].y = (q[2].y - q[1].y) + q[0].y;
++                q[3].z = (q[2].z - q[1].z) + q[0].z;
++                qc[nq++] = (u32)pdat->colour;
++            }
++        }
++        if (nq > 0) {
++            GS_DrawQuadListBeginBlock(nq * 4, 1);
++            for (i = 0; i < nq; i++) {
++                u32 c = qc[i];
++                GS_SetQuadListRGBA(c >> 0x10 & 0xff, c >> 8 & 0xff, c & 0xff, (c >> 0x18) & 0xff);
++                GS_DrawQuadListSetVert((struct _GS_VECTOR3*)&qp[i][0], u1, v1);
++                GS_DrawQuadListSetVert((struct _GS_VECTOR3*)&qp[i][1], u1, v2);
++                GS_DrawQuadListSetVert((struct _GS_VECTOR3*)&qp[i][2], u2, v2);
++                GS_DrawQuadListSetVert((struct _GS_VECTOR3*)&qp[i][3], u2, v1);
++            }
++            GS_DrawQuadListEndBlock();
++        }
++        GS_EnableLighting(1);
++        return rdeb;
++    }
++#endif
+     for (i = 0; i < 32; i++) {
+         float zero = 0.0f;
+         float neg_one = -1.0f;
+@@ -1435,8 +1504,16 @@ static s32 XboxEffectSystemInitialised;
  void InitXboxEffectSystem(s32 Level)
  {
    if (XboxEffectSystemInitialised == 0) {
@@ -4888,7 +4949,7 @@ index 18d4ff2..1407e55 100644
      NuWaterInit();
      NuGlassInit();
      XboxEffectSystemInitialised = 1;
-@@ -1456,8 +1479,14 @@ void InitXboxGSceneEffects(struct nugscn_s *gsc,union variptr_u *buffer,union va
+@@ -1456,8 +1533,14 @@ void InitXboxGSceneEffects(struct nugscn_s *gsc,union variptr_u *buffer,union va
  void CloseXboxEffectSystem(void)
  {
    if (XboxEffectSystemInitialised != 0) {
