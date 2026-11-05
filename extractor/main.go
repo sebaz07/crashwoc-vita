@@ -6,9 +6,12 @@
 // RVZ / WIA / GCZ: convert to ISO first with Dolphin (right click > Convert File).
 //
 // Usage: crashwoc-extract [disc image] [output folder]
-//        crashwoc-extract --dol main.dol <disc image>   (developers: the DOL for building)
-// Without arguments it asks for the image (you can also drag the image onto
-// the .exe).
+//
+//	crashwoc-extract --dol main.dol <disc image>   (developers: the DOL for building)
+//
+// On Windows, without arguments (or with an image dragged onto the .exe) it
+// opens a small window: pick the image, then the Vita (VitaShell USB mode) or
+// a folder, and press Extract. Elsewhere it asks in the terminal.
 package main
 
 import (
@@ -28,7 +31,7 @@ import (
 	"strings"
 )
 
-const version = "1.0.0"
+const version = "1.2.0"
 
 // file list of the USA disc (path, size, SHA-256): used to check the result
 //
@@ -71,7 +74,7 @@ type plainDisc struct {
 }
 
 func (d *plainDisc) ReadAt(p []byte, off int64) (int, error) { return d.f.ReadAt(p, off) }
-func (d *plainDisc) Size() int64                              { return d.size }
+func (d *plainDisc) Size() int64                             { return d.size }
 
 // CISO (Nintendont / USB Loader): 0x8000-byte header with a block map
 type cisoDisc struct {
@@ -281,9 +284,113 @@ func writeDOL(d disc, dst string) error {
 	return os.WriteFile(dst, buf, 0o644)
 }
 
+type extractResult struct {
+	id      string
+	rev     byte
+	files   int
+	bad     int
+	missing int
+	dest    string // .../crashwoc
+}
+
+// openAndCheck opens the image and checks it is the USA disc
+func openAndCheck(img string) (disc, string, byte, []fstFile, error) {
+	d, err := openDisc(img)
+	if err != nil {
+		return nil, "", 0, nil, err
+	}
+	id, rev, files, err := readFST(d)
+	if err != nil {
+		return nil, "", 0, nil, err
+	}
+	if id != "GCBE7D" {
+		return nil, id, rev, nil, fmt.Errorf("this port needs the USA version (GCBE7D), this disc is %s.\nEste port necesita la version USA (GCBE7D); este disco es %s.", id, id)
+	}
+	return d, id, rev, files, nil
+}
+
+// extractGame copies every file of the disc to <out>/crashwoc/files and checks
+// it against the manifest; progress gets (bytes done, bytes total).
+func extractGame(img, out string, progress func(done, total int64)) (*extractResult, error) {
+	d, id, rev, files, err := openAndCheck(img)
+	if err != nil {
+		return nil, err
+	}
+	man := loadManifest()
+	root := filepath.Join(out, "crashwoc", "files")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return nil, err
+	}
+	var total, done int64
+	for _, f := range files {
+		total += f.size
+	}
+	buf := make([]byte, 1<<20)
+	res := &extractResult{id: id, rev: rev, files: len(files), dest: filepath.Join(out, "crashwoc")}
+	seen := map[string]bool{}
+	for _, f := range files {
+		dst := filepath.Join(root, filepath.FromSlash(f.path))
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return nil, err
+		}
+		w, err := os.Create(dst)
+		if err != nil {
+			return nil, err
+		}
+		h := sha256.New()
+		for o := int64(0); o < f.size; {
+			n := int64(len(buf))
+			if n > f.size-o {
+				n = f.size - o
+			}
+			if _, err := d.ReadAt(buf[:n], f.offset+o); err != nil && err != io.EOF {
+				w.Close()
+				return nil, fmt.Errorf("reading %s: %v", f.path, err)
+			}
+			if _, err := w.Write(buf[:n]); err != nil {
+				w.Close()
+				return nil, fmt.Errorf("writing %s: %v", dst, err)
+			}
+			h.Write(buf[:n])
+			o += n
+			done += n
+			if progress != nil {
+				progress(done, total)
+			}
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("writing %s: %v", dst, err)
+		}
+		key := strings.ToLower(f.path)
+		seen[key] = true
+		if m, ok := man[key]; ok && (m.size != f.size || m.sha != hex.EncodeToString(h.Sum(nil))) {
+			res.bad++
+		}
+	}
+	for k := range man {
+		if !seen[k] {
+			res.missing++
+		}
+	}
+	return res, nil
+}
+
+// gameDataSize: bytes the extracted files take (from the manifest)
+func gameDataSize() int64 {
+	var n int64
+	for _, m := range loadManifest() {
+		n += m.size
+	}
+	return n
+}
+
 func main() {
 	args := os.Args[1:]
-	interactive := len(args) == 0
+	// Windows: a small window unless real command-line arguments are given
+	if guiMain(args) {
+		return
+	}
+	interactive := len(args) <= 1
 	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
 		fmt.Println("usage: crashwoc-extract [disc image] [output folder]")
 		fmt.Println("       crashwoc-extract --dol main.dol <disc image>")
@@ -310,8 +417,6 @@ func main() {
 	img := ""
 	if len(args) >= 1 {
 		img = args[0]
-		// dragged onto the exe: keep the window open at the end
-		interactive = len(args) == 1
 	} else {
 		fmt.Print("Drag the disc image (.iso / .nkit.iso / .ciso) here and press Enter\nArrastra aqui la imagen del disco y pulsa Enter:\n> ")
 		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -324,93 +429,39 @@ func main() {
 	if len(args) >= 2 {
 		out = args[1]
 	}
-
-	d, err := openDisc(img)
-	if err != nil {
-		fail(interactive, "%v", err)
-	}
-	id, rev, files, err := readFST(d)
-	if err != nil {
-		fail(interactive, "%v", err)
-	}
-	fmt.Printf("Disc / Disco: %s (revision %d), %d files\n", id, rev, len(files))
-	if id != "GCBE7D" {
-		fail(interactive, "this port needs the USA version (GCBE7D), this disc is %s.\n   Este port necesita la version USA (GCBE7D); este disco es %s.", id, id)
-	}
-	if rev != 0 {
-		fmt.Println("WARNING: only revision 0 was tested / AVISO: solo se probo la revision 0")
-	}
-
-	man := loadManifest()
-	root := filepath.Join(out, "crashwoc", "files")
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		fail(interactive, "%v", err)
-	}
-	var total, done int64
-	for _, f := range files {
-		total += f.size
-	}
-	buf := make([]byte, 1<<20)
-	bad := 0
-	seen := map[string]bool{}
 	lastPct := -1
-	for _, f := range files {
-		dst := filepath.Join(root, filepath.FromSlash(f.path))
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			fail(interactive, "%v", err)
+	res, err := extractGame(img, out, func(done, total int64) {
+		if pct := int(done * 100 / max64(total, 1)); pct != lastPct {
+			lastPct = pct
+			fmt.Printf("\rExtracting / Extrayendo... %3d%%", pct)
 		}
-		w, err := os.Create(dst)
-		if err != nil {
-			fail(interactive, "%v", err)
-		}
-		h := sha256.New()
-		for o := int64(0); o < f.size; {
-			n := int64(len(buf))
-			if n > f.size-o {
-				n = f.size - o
-			}
-			if _, err := d.ReadAt(buf[:n], f.offset+o); err != nil && err != io.EOF {
-				fail(interactive, "reading %s: %v", f.path, err)
-			}
-			w.Write(buf[:n])
-			h.Write(buf[:n])
-			o += n
-			done += n
-			if pct := int(done * 100 / max64(total, 1)); pct != lastPct {
-				lastPct = pct
-				fmt.Printf("\rExtracting / Extrayendo... %3d%%", pct)
-			}
-		}
-		if err := w.Close(); err != nil {
-			fail(interactive, "writing %s: %v", dst, err)
-		}
-		key := strings.ToLower(f.path)
-		seen[key] = true
-		if m, ok := man[key]; ok && (m.size != f.size || m.sha != hex.EncodeToString(h.Sum(nil))) {
-			if bad < 10 {
-				fmt.Printf("\n  checksum mismatch / no coincide: %s", f.path)
-			}
-			bad++
-		}
+	})
+	if err != nil {
+		fail(interactive, "%v", err)
 	}
-	missing := 0
-	for k := range man {
-		if !seen[k] {
-			missing++
-		}
-	}
-	fmt.Printf("\rExtracting / Extrayendo... 100%%\n\n")
-	if bad > 0 || missing > 0 {
-		fmt.Printf("WARNING: %d files differ and %d are missing compared to a good USA dump.\n", bad, missing)
-		fmt.Printf("AVISO: %d archivos no coinciden y faltan %d respecto a un volcado USA correcto.\n", bad, missing)
+	fmt.Printf("\rExtracting / Extrayendo... 100%%\n")
+	fmt.Printf("Disc / Disco: %s (revision %d), %d files\n\n", res.id, res.rev, res.files)
+	if res.bad > 0 || res.missing > 0 {
+		fmt.Printf("WARNING: %d files differ and %d are missing compared to a good USA dump.\n", res.bad, res.missing)
+		fmt.Printf("AVISO: %d archivos no coinciden y faltan %d respecto a un volcado USA correcto.\n", res.bad, res.missing)
 		fmt.Println("The game may crash. Check your dump. / El juego puede fallar. Revisa tu volcado.")
 	} else {
 		fmt.Println("All files verified OK / Todos los archivos verificados OK")
 	}
-	fmt.Printf("\nDone / Listo: %s\n\n", filepath.Join(out, "crashwoc"))
+	fmt.Printf("\nDone / Listo: %s\n\n", res.dest)
 	fmt.Println("Copy the \"crashwoc\" folder to ux0:data/ on your Vita (ux0:data/crashwoc/files/...).")
 	fmt.Println("Copia la carpeta \"crashwoc\" a ux0:data/ en tu Vita (ux0:data/crashwoc/files/...).")
 	waitEnter(interactive)
+}
+
+// looksLikeVita: the root of ux0: has app/ and data/
+func looksLikeVita(dir string) bool {
+	for _, d := range []string{"app", "data"} {
+		if st, err := os.Stat(filepath.Join(dir, d)); err != nil || !st.IsDir() {
+			return false
+		}
+	}
+	return true
 }
 
 func sha1hex(b []byte) string {

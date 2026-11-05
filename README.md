@@ -20,6 +20,8 @@ the game: this project contains **no game files**.
 - 30–60 fps depending on the area. Busy scenes (lots of enemies, particles,
   steam) can drop below 30; **Select + D-pad down** locks the frame rate for
   steadier pacing.
+- *Crash Blast* (the Game Boy Advance link-cable minigame in the main menu)
+  is not available: there is no GBA on the Vita.
 - Known issues: some crushing platforms in *Earth Crisis* (`a\earth_r`) may
   not show up; loading a level takes ~8–13 s.
 - Bug and performance reports are welcome (see [Reporting problems](#reporting-problems)).
@@ -41,13 +43,25 @@ the game: this project contains **no game files**.
 1. **Download** from [Releases](../../releases): `crashwoc.vpk` and the
    extractor for your PC (`crashwoc-extract.exe` for Windows,
    `crashwoc-extract-linux` or `crashwoc-extract-macos`).
-2. **Extract the game files**: drag your disc image onto
-   `crashwoc-extract.exe` (or run it and drag the image into the window).
-   It checks the disc and every file and creates the folder
-   `crashwoc-vita-data/crashwoc` next to the extractor.
-3. **Copy the `crashwoc` folder to `ux0:data/` on the Vita** (VitaShell: press
-   *Select* for FTP, or *Start > USB*). The result must be
-   `ux0:data/crashwoc/files/...`:
+2. **Extract the game files**: open `crashwoc-extract.exe` (double click).
+   1. **Disc image**: press *Browse…* and pick your image (or drag the image
+      onto the `.exe`).
+   2. **Where to put the files**:
+      - *Straight to my PS Vita*: in VitaShell press **START > USB
+        connection** and plug the Vita in; the extractor finds its memory card
+        (`ux0:`) by itself, or press *Browse…* and pick its drive. The files go
+        to `ux0:data/crashwoc/files/`.
+      - *To a folder on this PC*: then copy the `crashwoc` folder it creates
+        to `ux0:data/` on the Vita (VitaShell: *Select* for FTP, or *START >
+        USB connection*).
+   3. Press **Extract**. It checks the disc (USA, `GCBE7D`) and every file
+      against a good dump, and tells you when it is done.
+
+   ![Extractor](docs/images/extractor-en-1.png)
+
+   Linux / macOS: `./crashwoc-extract-linux "Crash.iso" <output folder>`
+   (or `crashwoc-extract-macos`); it creates `<output folder>/crashwoc`.
+3. **Check the layout on the Vita**: it must be `ux0:data/crashwoc/files/...`
 
    ![Folder layout](docs/images/layout.png)
 

@@ -1074,7 +1074,7 @@ index 3f05987..3c51746 100644
  //NGC MATCH
  s32 CombinationCharacterBD(char c0,char c1) {
 diff --git a/src/gamecode/game.c b/src/gamecode/game.c
-index 061c06d..3bd2032 100644
+index 061c06d..e537dd9 100644
 --- a/src/gamecode/game.c
 +++ b/src/gamecode/game.c
 @@ -389,7 +389,11 @@ extern char* tYES[6];
@@ -1226,7 +1226,21 @@ index 061c06d..3bd2032 100644
      Mask.active = 0;
    }
    ResetAkuAkuAdvice();
-@@ -7356,10 +7374,17 @@ extern struct ldata_s *LDATA;
+@@ -7068,6 +7086,13 @@ void NewMenu(struct cursor_s* cur, s32 menu, s32 y, s32 level) {
+     s32 old_menu;
+     s32 lock;
+ 
++#ifdef PORT
++    /* Crash Blast is a GBA game sent over the link cable: there is no GBA on
++     * the Vita (the download screens crashed), so the entry does nothing. */
++    if (menu == MENU_CRASH_BLAST_MENU) {
++        return;
++    }
++#endif
+     old_menu = cur->menu;
+     cur->wait = 0;
+     lock = 0;
+@@ -7356,10 +7381,17 @@ extern struct ldata_s *LDATA;
  extern char* LanguageName[6];
  extern s32 Level;
  extern char* LevelName[44][6];
@@ -1245,7 +1259,7 @@ index 061c06d..3bd2032 100644
  extern s32 highallocaddr;
  extern s32 pause_dir;
  extern union variptr_u superbuffer_base;
-@@ -8349,10 +8374,36 @@ s32 PlayerObjectAnimCollision(struct obj_s *obj,struct nuspecial_s *special,floa
+@@ -8349,10 +8381,36 @@ s32 PlayerObjectAnimCollision(struct obj_s *obj,struct nuspecial_s *special,floa
    return 0;
  }
  
@@ -1282,7 +1296,7 @@ index 061c06d..3bd2032 100644
      dead = 0;
      if (Bonus == 2 && plr->obj.dead != 0) {
          dead = 1;
-@@ -8639,7 +8690,7 @@ void InitSplineTable(void) {
+@@ -8639,7 +8697,7 @@ void InitSplineTable(void) {
    if (world_scene[0] != NULL) {
      for (i = 0; i < 0x49; i++) {
        SplTab[i].spl = NULL;
@@ -1291,7 +1305,7 @@ index 061c06d..3bd2032 100644
          SplTab[i].spl = NuSplineFind(world_scene[0],SplTab[i].name);
          if (SplTab[i].spl != NULL) {
            if ((SplTab[i].min > 0) && (SplTab[i].spl->len < SplTab[i].min)) {
-@@ -8670,7 +8721,7 @@ void InitObjectTable(void) {
+@@ -8670,7 +8728,7 @@ void InitObjectTable(void) {
  
    for (i = 0; i < 0xc9; i++) {
      ObjTab[i].obj.special = NULL;
@@ -1300,7 +1314,7 @@ index 061c06d..3bd2032 100644
        if (NuSpecialFind(*ObjTab[i].scene,&ObjTab[i].obj,ObjTab[i].name) != 0) {
          (ObjTab[i].obj.special)->instance->flags.visible = ObjTab[i].visible;
          for (j = 0; j < 0x1a; j++) {
-@@ -8890,12 +8941,20 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
+@@ -8890,12 +8948,20 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
        if (((angle == NULL) & 1) == 0) {
          a = SplinePointAngle(spl,j);
          d = RotDiff(*angle,a);

@@ -54,10 +54,17 @@ CWOC_DATA=/path/to/crashwoc/files ./build-pc/crashwoc
 
 ```sh
 cd extractor
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ../dist/crashwoc-extract.exe .
+GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui" -o ../dist/crashwoc-extract.exe .
 GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ../dist/crashwoc-extract-linux .
 GOOS=darwin  GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o ../dist/crashwoc-extract-macos .
 ```
+
+On Windows the extractor is a small window (plain Win32, no cgo:
+`gui_windows.go`, `dialogs_windows.go`); with two or more arguments it runs
+in the console instead. `rsrc_windows_amd64.syso` holds the icon, the
+Common Controls 6 / DPI manifest and the version info, built from
+`extractor/winres/` with
+`llvm-windres --target=pe-x86-64 -O coff -i app.rc -o ../rsrc_windows_amd64.syso`.
 
 `extractor/manifest.csv` lists the file names, sizes and SHA-256 of a good USA
 dump (no game data) to verify what is extracted.

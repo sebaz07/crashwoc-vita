@@ -11,7 +11,7 @@ tu propia copia del juego: este proyecto **no incluye archivos del juego**.
 | | |
 |---|---|
 | ![Nivel de nieve](docs/images/snow.png) | ![Jungla](docs/images/jungle.png) |
-| ![Nivel de tierra](docs/images/earth.png) | ![Extractor](docs/images/extractor.png) |
+| ![Nivel de tierra](docs/images/earth.png) | ![Extractor](docs/images/extractor-es-2.png) |
 
 ## Estado: beta
 
@@ -21,6 +21,8 @@ tu propia copia del juego: este proyecto **no incluye archivos del juego**.
 - 30–60 fps según la zona. Las escenas cargadas (muchos enemigos, partículas,
   vapor) pueden bajar de 30; **Select + abajo** bloquea los fps para un ritmo
   más parejo.
+- *Crash Blast* (el minijuego de Game Boy Advance por cable link del menú
+  principal) no está disponible: la Vita no tiene GBA.
 - Problemas conocidos: puede que algunas plataformas aplastadoras de *Earth
   Crisis* (`a\earth_r`) no aparezcan; cargar un nivel tarda unos 8–13 s.
 - Los reportes de bugs y de rendimiento son bienvenidos (ver
@@ -43,13 +45,25 @@ tu propia copia del juego: este proyecto **no incluye archivos del juego**.
 1. **Descarga** de [Releases](../../releases): `crashwoc.vpk` y el extractor
    para tu PC (`crashwoc-extract.exe` en Windows, `crashwoc-extract-linux` o
    `crashwoc-extract-macos`).
-2. **Extrae los archivos del juego**: arrastra tu imagen del disco sobre
-   `crashwoc-extract.exe` (o ábrelo y arrastra la imagen a la ventana). Revisa
-   el disco y cada archivo, y crea la carpeta `crashwoc-vita-data/crashwoc`
-   junto al extractor.
-3. **Copia la carpeta `crashwoc` a `ux0:data/` en la Vita** (VitaShell:
-   *Select* para FTP, o *Start > USB*). Debe quedar
-   `ux0:data/crashwoc/files/...`:
+2. **Extrae los archivos del juego**: abre `crashwoc-extract.exe` (doble clic).
+   1. **Imagen del disco**: pulsa *Examinar…* y elige tu imagen (o arrastra la
+      imagen sobre el `.exe`).
+   2. **Dónde poner los archivos**:
+      - *Directo a mi PS Vita*: en VitaShell pulsa **START > Conexión USB** y
+        conecta la Vita; el extractor encuentra su memoria (`ux0:`) solo, o
+        pulsa *Examinar…* y elige su unidad. Los archivos quedan en
+        `ux0:data/crashwoc/files/`.
+      - *A una carpeta de este PC*: después copia la carpeta `crashwoc` que
+        crea a `ux0:data/` en la Vita (VitaShell: *Select* para FTP, o *START >
+        Conexión USB*).
+   3. Pulsa **Extraer**. Comprueba el disco (USA, `GCBE7D`) y cada archivo
+      contra un volcado correcto, y te avisa cuando termina.
+
+   ![Extractor](docs/images/extractor-es-1.png)
+
+   Linux / macOS: `./crashwoc-extract-linux "Crash.iso" <carpeta destino>`
+   (o `crashwoc-extract-macos`); crea `<carpeta destino>/crashwoc`.
+3. **Revisa la estructura en la Vita**: debe quedar `ux0:data/crashwoc/files/...`
 
    ![Estructura de carpetas](docs/images/layout.png)
 

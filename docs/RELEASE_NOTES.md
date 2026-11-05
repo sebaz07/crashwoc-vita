@@ -23,11 +23,17 @@ Installation / Instalación: see the [README](../README.md) / ver el [README en 
 - Screen modes 4:3 / stretched / widescreen (Select + up) and frame lock
   (Select + down). Modos de pantalla (Select + arriba) y bloqueo de fps
   (Select + abajo).
+- Windows extractor with a small window: pick the disc image and the Vita
+  (VitaShell USB mode, found automatically) or a folder, then Extract.
+  Extractor para Windows con ventana: eliges la imagen y la Vita (modo USB
+  de VitaShell, se detecta sola) o una carpeta, y pulsas Extraer.
 - Render thread on a second CPU core and GPU-side vertex streaming.
   Renderizado en un segundo núcleo y vértices directo a la GPU.
 
 ## Known issues / Problemas conocidos
 
+- *Crash Blast* (GBA link-cable minigame) is not available on the Vita.
+  *Crash Blast* (minijuego de GBA por cable link) no está disponible en la Vita.
 - Some crushing platforms in *Earth Crisis* may not show up.
   Puede que algunas plataformas aplastadoras de *Earth Crisis* no aparezcan.
 - Busy scenes can drop below 30 fps; level loads take ~8–13 s.
