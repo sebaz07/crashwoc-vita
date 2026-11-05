@@ -1,0 +1,5524 @@
+diff --git a/src/elf_systypes.h b/src/elf_systypes.h
+index 6e95eb4..4dfdf18 100644
+--- a/src/elf_systypes.h
++++ b/src/elf_systypes.h
+@@ -4,13 +4,16 @@
+ #include "types.h"
+ 
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ struct __sbuf //0x8
+ {
+     unsigned char* _base;
+     int _size;
+ };
++#endif
+ 
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ // Size: 0x18
+ struct _Bigint
+ {
+@@ -21,6 +24,7 @@ struct _Bigint
+     int _wds; // Offset: 0x10, DWARF: 0xFDCC
+     unsigned int _x[1]; // Offset: 0x14, DWARF: 0xFDF3
+ };
++#endif
+ 
+ // Size: 0x24
+ struct tm
+@@ -36,6 +40,7 @@ struct tm
+     int tm_isdst; // Offset: 0x20, DWARF: 0xF29F
+ };
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ // Size: 0xC
+ struct _glue
+ {
+@@ -43,6 +48,7 @@ struct _glue
+     int _niobs; // Offset: 0x4, DWARF: 0xF32D
+     struct __sFILE* _iobs; // Offset: 0x8, DWARF: 0xF356
+ };
++#endif
+ 
+ 
+ /*
+@@ -66,6 +72,7 @@ union
+ } _new; //0xF0
+ */
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ // Size: 0x88
+ struct _atexit
+ {
+@@ -73,6 +80,7 @@ struct _atexit
+     int _ind;
+     void(*_fns[32])();
+ };
++#endif
+ 
+ // Size: 0x10
+ struct _sceDmaTag
+@@ -151,6 +159,7 @@ struct _LARGE_INTEGER_NGC
+ };
+ 
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ // Size: 0x58
+ struct __sFILE
+ {
+@@ -176,7 +185,9 @@ struct __sFILE
+     int _offset; // Offset: 0x50, DWARF: 0xF6BA
+     struct _reent* _data; // Offset: 0x54, DWARF: 0xF6E4
+ };
++#endif
+ 
++#if !(defined(PORT) && defined(_NEWLIB_VERSION)) /* newlib (Vita) defines it */
+ // Size: 0x2EC
+ struct _reent
+ {
+@@ -221,6 +232,7 @@ struct _reent
+     struct _glue __sglue; // Offset: 0x1D8, DWARF: 0xFC6B
+     struct __sFILE __sf[3]; // Offset: 0x1E4, DWARF: 0xFC97
+ };
++#endif
+ 
+ 
+ // Size: 0xC
+diff --git a/src/gamecode/ai.c b/src/gamecode/ai.c
+index 9a6fbb0..7af1d3d 100644
+--- a/src/gamecode/ai.c
++++ b/src/gamecode/ai.c
+@@ -57,11 +57,22 @@ struct objtab_s {
+   struct objtab_obj_s obj;
+ };
+ 
++#ifdef PORT /* layout from game.c / panel.c (8 bytes in the DOL) */
++struct plritem_s {
++    s16 count;
++    s16 draw;
++    s8 frame;
++    s8 wait;
++    u8 delay;
++    u8 item;
++};
++#else
+ struct plritem_s {
+   s32 draw;
+   s32 count;
+   s32 frame;
+ };
++#endif
+ 
+ extern struct AITYPE_s AIType[107];
+ extern LevelAI AITab[96];
+@@ -103,33 +114,118 @@ extern char crunchtime_phase4tab[8];
+ 
+ static struct nuvec_s drain_wawa_pos;
+ static s32 drain_wawa_ok;
+-static u16 drain_wawa_xrot;
+-static u16 drain_wawa_yrot;
+-static u16 drain_ang[3];
+-static CharacterModel *drain_wawa_model;
+-static AnimPacket drain_wawa_anim;
++#ifndef PORT
++static
++#endif
++u16 drain_wawa_xrot;
++#ifndef PORT
++static
++#endif
++u16 drain_wawa_yrot;
++#ifndef PORT
++static
++#endif
++u16 drain_ang[3];
++#ifndef PORT
++static
++#endif
++CharacterModel *drain_wawa_model;
++#ifndef PORT
++static
++#endif
++AnimPacket drain_wawa_anim;
+ 
+-static u32 crunchtime_attack_phase;
++#ifndef PORT
++static
++#endif
++u32 crunchtime_attack_phase;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct nuvec_s crunchtime_arena_midpos;
++#else
+ static struct nuvec_s crunchtime_arena_midpos;
+-static struct nuvec_s space_ukapos;
+-static u32 earth_attack_wait;
++#endif
++#ifndef PORT
++static
++#endif
++struct nuvec_s space_ukapos;
++#ifndef PORT
++static
++#endif
++u32 earth_attack_wait;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct nuvec_s water_attack_pos[4];
++#else
+ static struct nuvec_s water_attack_pos[4];
+-static u32 water_attack_wait;
+-static u32 water_last_chute;
+-static struct nuvec_s fire_backpos[5];
+-static struct nuvec_s fire_frontpos[5];
+-static u32 fire_attack_wait;
++#endif
++#ifndef PORT
++static
++#endif
++u32 water_attack_wait;
++#ifndef PORT
++static
++#endif
++u32 water_last_chute;
++#ifndef PORT
++static
++#endif
++struct nuvec_s fire_backpos[5];
++#ifndef PORT
++static
++#endif
++struct nuvec_s fire_frontpos[5];
++#ifndef PORT
++static
++#endif
++u32 fire_attack_wait;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct nuvec_s weather_srcpos[9];
++#else
+ static struct nuvec_s weather_srcpos[9];
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct nuvec_s weather_dstpos[9];
++#else
+ static struct nuvec_s weather_dstpos[9];
+-static u32 weather_attack_wait;
+-static s32 crunch_vulnerable;
+-static f32 SPACEUKAHACKY;
+-static f32 SPACEUKADIST;
+-static u16 spaceuka_angle[3];
+-static f32 SPACEUKAFRAMEHACK;
+-static struct nuvec_s space_buttonpos[4];
++#endif
++#ifndef PORT
++static
++#endif
++u32 weather_attack_wait;
++#ifndef PORT
++static
++#endif
++s32 crunch_vulnerable;
++#ifndef PORT
++static
++#endif
++f32 SPACEUKAHACKY;
++#ifndef PORT
++static
++#endif
++f32 SPACEUKADIST;
++#ifndef PORT
++static
++#endif
++u16 spaceuka_angle[3];
++#ifndef PORT
++static
++#endif
++f32 SPACEUKAFRAMEHACK;
++#ifndef PORT
++static
++#endif
++struct nuvec_s space_buttonpos[4];
++#ifdef PORT
++/* The AI command tables set and clear these through data pointers, which the
++ * port resolves to the DOL copies; C statics here would be separate variables
++ * (the punch flag stayed set after Crunch's first punch on Cortex). */
++extern s32 dol_803D3C14, dol_803D3C18;
++#define SpaceCrunch_Punch dol_803D3C14
++#define SpaceCortex_Back dol_803D3C18
++#else
+ static s32 SpaceCrunch_Punch;
+ static s32 SpaceCortex_Back;
++#endif
+ 
+ float FindNearestCreature(struct nuvec_s *pos, s32 character, struct nuvec_s *dst);
+ void SetNewMaskStuff(s32 Indx, struct nuvec_s *Centre, struct nuvec_s *Off,
+@@ -369,7 +465,10 @@ void DrawDRAINDAMAGE(void)		//TODO
+ }
+ 
+ //NGC MATCH
+-static s32 WaterCrunchFunction_Defeated(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 WaterCrunchFunction_Defeated(struct creature_s *c,struct nuvec_s *pos) {
+   boss_dead = (Game.hub[Hub].flags & 4) ? 2 : 1;
+   return 1;
+ }
+@@ -727,7 +826,10 @@ void DrawCRUNCHTIME(void) {
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCrunchFunction_NewPoint(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCrunchFunction_NewPoint(struct creature_s *c,struct nuvec_s *pos) {
+   s32 i_old;
+   s32 iVar4;
+ 
+@@ -765,7 +867,10 @@ static s32 SpaceCrunchFunction_NewPoint(struct creature_s *c,struct nuvec_s *pos
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCrunchFunction_NewCount(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCrunchFunction_NewCount(struct creature_s *c,struct nuvec_s *pos) {
+   switch(crunchtime_attack_phase) {
+       default:
+       case 0:
+@@ -785,7 +890,10 @@ static s32 SpaceCrunchFunction_NewCount(struct creature_s *c,struct nuvec_s *pos
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCrunchFunction_AttackCortex(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCrunchFunction_AttackCortex(struct creature_s *c,struct nuvec_s *pos) {
+   c->ai.i0 = 0;
+   c->ai.newpos = *pos;
+   c->obj.anim.newaction = 0x2c;
+@@ -793,12 +901,18 @@ static s32 SpaceCrunchFunction_AttackCortex(struct creature_s *c,struct nuvec_s
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCrunchFunction_CheckCortexBack(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCrunchFunction_CheckCortexBack(struct creature_s *c,struct nuvec_s *pos) {
+   return SpaceCortex_Back;
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCrunchFunction_PunchCortex(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCrunchFunction_PunchCortex(struct creature_s *c,struct nuvec_s *pos) {
+   FindNearestCreature(&(player->obj).pos,2,NULL);
+   if (temp_creature_i != -1) {
+     Character[temp_creature_i].obj.anim.newaction = 0x49;
+@@ -818,7 +932,10 @@ s32 GetCurrentSpaceBossObjectives(void) {
+ }
+ 
+ //NGC MATCH
+-static s32 SpaceCortexFunction_CheckPunch(struct creature_s *c,struct nuvec_s *pos) {
++#ifndef PORT
++static
++#endif
++s32 SpaceCortexFunction_CheckPunch(struct creature_s *c,struct nuvec_s *pos) {
+   return SpaceCrunch_Punch;
+ }
+ 
+@@ -927,6 +1044,10 @@ float FindNearestCreature(struct nuvec_s *pos,s32 character,struct nuvec_s *dst)
+ }
+ 
+ //68% NGC
++#ifdef PORT
++static int port_ai_guard;
++void port_stub_hit(const char *name);
++#endif
+ void MoveCreature(struct creature_s* c) {
+     u16 uVar12;
+     u16 old_hdg;
+@@ -1015,12 +1136,23 @@ void MoveCreature(struct creature_s* c) {
+             pos = AITab[c->i_aitab].pos;
+             // sVar7 = AIType[unaff_r17].points;
+             cVar3 = (u32)AIType[unaff_r17].points;
++#ifdef PORT
++            port_ai_guard = 0;
++#endif
+             if (c->cmdcurr != NULL)
+                 goto LAB_80005684;
+             pcVar9 = c->cmdtable;
+             do {
+                 c->cmdcurr = pcVar9;
+             LAB_80005684:
++#ifdef PORT
++                /* TODO(F4): MoveCreature's command interpreter is only partly
++                 * decompiled and can spin forever; bail out until it is redone. */
++                if (++port_ai_guard > 256) {
++                    port_stub_hit("MoveCreature: AI command loop guard");
++                    break;
++                }
++#endif
+                 pcVar17 = player;
+                 pcVar9 = c->cmdcurr;
+                 bVar2 = 1;
+@@ -2139,7 +2271,11 @@ void MoveCreature(struct creature_s* c) {
+                     continue; //goto LAB_80005684;
+                 }
+                 
++#ifdef PORT /* the DOL follows gotos while cmd == 0x8c (condition was inverted) */
++                for (i = 0; c->cmdcurr->cmd == 0x8c; i++) {
++#else
+                 for (i = 0; c->cmdcurr->cmd != 0x8c; i++) {
++#endif
+                     c->cmdcurr = &c->cmdtable[FindAILabel(c->cmdtable, c->cmdcurr->i)];
+                 }
+                 if (i != 0) continue;
+diff --git a/src/gamecode/bug.c b/src/gamecode/bug.c
+index 25b2969..880f148 100644
+--- a/src/gamecode/bug.c
++++ b/src/gamecode/bug.c
+@@ -26,22 +26,58 @@ extern s32 FRAMES;
+ void GetALONG(struct nuvec_s *pos,struct RPos_s *rpos,s32 iRAIL,s32 iALONG,s32 info);
+ 
+ BUGAREA BugArea[4];
+-static f32 BUGFADETIME = 2.0f;
+-static f32 mechlight_distance = 2.0f;
++#ifndef PORT
++static
++#endif
++f32 BUGFADETIME = 2.0f;
++#ifndef PORT
++static
++#endif
++f32 mechlight_distance = 2.0f;
+ static f32 mechlight_radius = 5.0f;
+-static f32 mechlight_fade;
++#ifndef PORT
++static
++#endif
++f32 mechlight_fade;
+ static f32 buglight_distance_ = 2.0f;
+-static f32 buglight_fade;
+-static ushort buglight_ang[4];
+-static struct nuvec_s bug_pos;
+-static struct nuvec_s bug_splpos;
+-static f32 bug_scale;
+-static f32 bug_fade;
++#ifndef PORT
++static
++#endif
++f32 buglight_fade;
++#ifndef PORT
++static
++#endif
++ushort buglight_ang[4];
++#ifndef PORT
++static
++#endif
++struct nuvec_s bug_pos;
++#ifndef PORT
++static
++#endif
++struct nuvec_s bug_splpos;
++#ifndef PORT
++static
++#endif
++f32 bug_scale;
++#ifndef PORT
++static
++#endif
++f32 bug_fade;
+ s32 buglight_enable;
+ AnimPacket BugAnim;
+-static ushort bug_xrot;
+-static ushort bug_yrot;
+-static f32 bug_splratio;
++#ifndef PORT
++static
++#endif
++ushort bug_xrot;
++#ifndef PORT
++static
++#endif
++ushort bug_yrot;
++#ifndef PORT
++static
++#endif
++f32 bug_splratio;
+ 
+ //NGC MATCH
+ void InitBugAreas(void) {
+@@ -135,17 +171,17 @@ void UpdateBugLight(struct creature_s *c) {
+   s32 i;
+   
+   bug_fade = 0.0f;
+-  if ((LBIT & 0x88100000) == 0) {
++  if ((PORT_W64(LBIT) & 0x88100000) == 0) {
+     return;
+   }
+   if (((Level == 0x14) && (GemPath != 0)) || ((InBugArea((s32)(c->obj).RPos.iRAIL,(s32)(c->obj).RPos.iALONG,(c->obj).RPos.fALONG) != -1 &&
+-      (((LBIT & 0x80100000) == 0 || (VEHICLECONTROL == 1)))))) {
++      (((PORT_W64(LBIT) & 0x80100000) == 0 || (VEHICLECONTROL == 1)))))) {
+      f = BUGFADETIME;
+   } else  {
+         f = 0.0f;
+   }
+   buglight_ang[3] += qrand() / 0x40 * 5;
+-  if ((LBIT & 0x80100000) != 0) {
++  if ((PORT_W64(LBIT) & 0x80100000) != 0) {
+     if (mechlight_fade > f) {
+       mechlight_fade -= 0.016666668f;
+         if(mechlight_fade < f) {
+diff --git a/src/gamecode/camera.c b/src/gamecode/camera.c
+index db17a61..f981979 100644
+--- a/src/gamecode/camera.c
++++ b/src/gamecode/camera.c
+@@ -1036,7 +1036,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj)
+           GameCamera->mode = 5;
+         }
+         else
+-          if ((LBIT & 0x00100210801) != 0)
++          if ((PORT_W64(LBIT) & 0x00100210801) != 0)
+         {
+           (*GameCamera).mode = 0x10;
+         }
+diff --git a/src/gamecode/chase.c b/src/gamecode/chase.c
+index cd4780c..d940a33 100644
+--- a/src/gamecode/chase.c
++++ b/src/gamecode/chase.c
+@@ -187,7 +187,9 @@ s32 NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm);
+ s32 NuSpecialFind(struct nugscn_s *scene, struct nuhspecial_s *special, char *name);
+ void SetLights(struct nucolour3_s *vCOL0,struct nuvec_s *vDIR0,struct nucolour3_s *vCOL1,struct nuvec_s *vDIR1, struct nucolour3_s *vCOL2,struct nuvec_s *vDIR2,struct nuvec_s *vAMB);
+ void SetLevelLights(void);
++#ifndef PORT
+ void AddAnimDebris(struct CharacterModel *model,struct numtx_s *mtx,s32 action,float time,struct numtx_s *rotmtx);
++#endif
+ 
+ struct gdeb_s {
+     s32 i;
+diff --git a/src/gamecode/creature.c b/src/gamecode/creature.c
+index affc480..0f49a86 100644
+--- a/src/gamecode/creature.c
++++ b/src/gamecode/creature.c
+@@ -43,15 +43,34 @@ struct objtab_s {
+   u64 levbits;
+ };
+ 
++#ifdef PORT /* layout from game.c / panel.c (8 bytes in the DOL) */
++struct plritem_s {
++    s16 count;
++    s16 draw;
++    s8 frame;
++    s8 wait;
++    u8 delay;
++    u8 item;
++};
++#else
+ struct plritem_s {
+   s32 draw;
+   s32 count;
+   s32 frame;
+ };
++#endif
+ 
++#ifdef PORT /* full layout (16 bytes): GDeb[] is indexed here */
++struct gdeb_s {
++    s32 i;
++    char *name;
++    u64 levbits;
++};
++#else
+ struct gdeb_s {
+   s32 i;
+ };
++#endif
+ 
+ struct tersurface_s {
+   f32 friction;
+@@ -80,20 +99,38 @@ extern s32 new_mode;
+ extern s32 new_level;
+ extern s32 Demo;
+ extern s32 Bonus;
++#ifdef PORT
++/* a byte in the game (dtk symbols): a wider C type made the translated
++ * code address the wrong byte of it (little-endian layout) */
++extern u8 bonus_wumpa_delay;
++#else
+ extern s32 bonus_wumpa_delay;
++#endif
+ extern f32 bonus_wumpa_wait;
+ extern s32 bonus_finish_frame;
+ extern s32 save_bonus_crates_destroyed;
+ extern f32 bonus_crates_wait;
+ extern s32 bonus_lives;
++#ifdef PORT
++/* a byte in the game (dtk symbols): a wider C type made the translated
++ * code address the wrong byte of it (little-endian layout) */
++extern u8 bonus_life_delay;
++#else
+ extern s32 bonus_life_delay;
++#endif
+ extern f32 bonus_lives_wait;
+ extern s32 bonus_restart;
+ extern s32 GameMode;
+ extern s32 TimeTrial;
+ extern s32 Adventure;
+ extern s32 level_part_2;
++#ifdef PORT
++/* a halfword in the game (dtk symbols): a wider C type made the translated
++ * code address the wrong byte of it (little-endian layout) */
++extern u16 plr_items;
++#else
+ extern u32 plr_items;
++#endif
+ extern s32 boss_dead;
+ extern s32 cp_iALONG;
+ extern s32 cp_goto;
+@@ -497,7 +534,7 @@ LAB_1:
+     case 0x5d:
+     case 0x5e:
+               if (boss_dead == 1) {
+-                if (LBIT & 0x3e00000 != 0) //goto LAB_80017f20;
++                if (PORT_W64(LBIT) & 0x3e00000 != 0) //goto LAB_80017f20;
+                   d = NuVecDistSqr(p0,pAI->pos,NULL);
+                   if ((index == -1) || (d < dist)) {
+                     index = i;
+@@ -578,7 +615,7 @@ void ResetPlayer(s32 set) {
+             }
+             if (((Level == 2) && (cp_iRAIL == 0)) && (cp_iALONG == 0x23)) {
+                 water = 2;
+-            } else if ((LBIT & 0x0000000400000040) || ((Level == 2 && start))) {
++            } else if ((PORT_W64(LBIT) & 0x0000000400000040) || ((Level == 2 && start))) {
+                 water = 1;
+             } else {
+                 water = 0;
+@@ -830,11 +867,11 @@ s32 LoadCharacterModel(s32 character, s32 level, s32* cmodel_index, s32 clist_en
+             if (level == 0x28) {
+                 anim = space[clist_entry].animlist;
+             } else if (character == 0) {
+-                if ((LBIT & 0x0000001001002000) && (level != 0x1e)) {
++                if ((PORT_W64(LBIT) & 0x0000001001002000) && (level != 0x1e)) {
+                     anim = CrashAnim_GLIDER;
+-                } else if ((LBIT & 0x40000) != 0) {
++                } else if ((PORT_W64(LBIT) & 0x40000) != 0) {
+                     anim = CrashAnim_MOSQUITO;
+-                } else if ((LBIT & 0x0000000100210801) != 0) {
++                } else if ((PORT_W64(LBIT) & 0x0000000100210801) != 0) {
+                     anim = CrashAnim_ATLASPHERE;
+                 } else if (level == 0x1d) {
+                     anim = CrashAnim_GYRO;
+@@ -843,12 +880,12 @@ s32 LoadCharacterModel(s32 character, s32 level, s32* cmodel_index, s32 clist_en
+                 } else if (level == 0x2b) {
+                     anim = CrashAnim_CREDITS;
+                 }
+-            } else if ((character == 1) && (LBIT & 0x4000000)) {
++            } else if ((character == 1) && (PORT_W64(LBIT) & 0x4000000)) {
+                 anim = CocoAnim_DROPSHIP;
+             }
+             
+             while ((anim != NULL) && (anim->file != NULL) && (anim->action >= 0) && anim->action < 0x76) {
+-                if (anim->levbits & LBIT) {
++                if (PORT_W64(anim->levbits) & PORT_W64(LBIT)) {
+                     if (((anim->flags & 2) != 0) && (model->anmdata[anim->action]) == 0) {
+                         strcpy(tbuf, path);
+                         strcat(tbuf, anim->file);
+@@ -1276,7 +1313,7 @@ void UpdateCharacterIdle(struct creature_s* c, s32 character) {
+                     break;
+                 case 1:
+                     if ((c->idle_time > c->idle_wait)) {
+-                        if (((LBIT & 0x200000A1) != 0) && ((c->obj).character == 0)) {
++                        if (((PORT_W64(LBIT) & 0x200000A1) != 0) && ((c->obj).character == 0)) {
+                             i = NewCharacterIdle(c, model);
+                             if (i == 0) {
+                                 goto StartIdle;
+@@ -1586,7 +1623,7 @@ s32 DrawCharacterModel(struct CharacterModel* model,struct anim_s* anim,struct n
+     
+     model2 = model;
+     if (model->character == 0x54) {
+-        if ((LBIT & 0x0000000400000040)) {
++        if ((PORT_W64(LBIT) & 0x0000000400000040)) {
+             if ((s32)CRemap[115] != -1) {
+                 model2 = &CModel[(s32)CRemap[115]];
+             }
+@@ -2672,11 +2709,11 @@ void MovePlayer(struct creature_s *plr,struct nupad_s *pad) {
+   }
+   iVar4 = VEHICLECONTROL;
+   if (plr->obj.vehicle != -1) {
+-    if ((((LBIT & 0x00000001105252801) == 0) && (Level != 3)) &&
++    if ((((PORT_W64(LBIT) & 0x00000001105252801) == 0) && (Level != 3)) &&
+               ((Level != 0x1d || (Level == 0x1c)))) {
+         iVar4 = 1;
+     }
+-    else if (((LBIT & 0x0000000400000040) != 0) && (iVar4 == 0)) {
++    else if (((PORT_W64(LBIT) & 0x0000000400000040) != 0) && (iVar4 == 0)) {
+           VEHICLECONTROL = 1;
+     }
+   }
+@@ -2786,7 +2823,7 @@ void MovePlayer(struct creature_s *plr,struct nupad_s *pad) {
+         if (plr->obj.shadow != 2000000.0f) {
+           GetSurfaceInfo(&plr->obj,1,plr->obj.shadow);
+         }
+-        if ((LBIT & 0x0000000400000040) == 0) {
++        if ((PORT_W64(LBIT) & 0x0000000400000040) == 0) {
+           plr->obj.pos.y += NuTrigTable[(s32)(dVar27 * 32768.0f) & 0xffff] +
+                NuTrigTable[(s32)(dVar27 * 32768.0f) & 0xffff];
+         }
+@@ -4304,3 +4341,111 @@ void ResetAnimPacket(struct anim_s *anim,s32 action) {
+   anim->flags = '\0';
+   return;
+ }
++
++#ifdef PORT
++/* debug aid (CWOC_CRELOG=1): one line per active creature per frame */
++void port_log_creatures(int frame) {
++    extern void port_log(const char *fmt, ...);
++    s32 i;
++    for (i = 1; i < 9; i++) {
++        struct creature_s *c = &Character[i];
++        if (c->used == 0 || c->on == 0)
++            continue;
++        if (c->i_aitab != -1)
++            port_log("cre ai%d type%d status%d time %.2f delay %.2f typedelay %.2f", c->i_aitab, AITab[c->i_aitab].ai_type,
++                     AITab[c->i_aitab].status, AITab[c->i_aitab].time, AITab[c->i_aitab].delay,
++                     AIType[AITab[c->i_aitab].ai_type].delay);
++        port_log("cre f%d i%d ch%d dead%d pos %.2f %.2f %.2f mom %.3f %.3f %.3f", frame, i, c->obj.character,
++                 c->obj.dead, c->obj.pos.x, c->obj.pos.y, c->obj.pos.z, c->obj.mom.x, c->obj.mom.y, c->obj.mom.z);
++    }
++}
++
++/* debug aid (CWOC_TELEPORT=x,y,z@frame): move the player once at that frame */
++void port_teleport(int frame) {
++    extern void port_log(const char *fmt, ...);
++    /* CWOC_TELEPORT="x,y,z@frame;bonus@frame;..." (bonus = the bonus round in-platform) */
++    static int parsed, nt, blog = -1;
++    static int at[8], bonus_tp[8];
++    static float tx[8], ty[8], tz[8];
++    extern struct rail_s Rail[8];
++    extern s32 Bonus, bonus_restart, bonus_finish_frame, save_bonus_crates_destroyed, bonus_lives;
++    int i;
++    if (!parsed) {
++        const char *t = getenv("CWOC_TELEPORT");
++        parsed = 1;
++        blog = getenv("CWOC_BONUSLOG") != NULL;
++        while (t != NULL && *t && nt < 8) {
++            if (sscanf(t, "bonus@%d", &at[nt]) == 1) {
++                bonus_tp[nt++] = 1;
++            } else if (sscanf(t, "%f,%f,%f@%d", &tx[nt], &ty[nt], &tz[nt], &at[nt]) == 4) {
++                bonus_tp[nt++] = 0;
++            }
++            t = strchr(t, ';');
++            if (t != NULL) t++;
++        }
++    }
++    if (blog && (frame % 15) == 0) {
++        struct creature_s *c = &Character[0];
++        extern f32 bonus_wumpa_wait, bonus_crates_wait, bonus_lives_wait;
++        if (c->obj.dead != 0)
++            port_log("bonus: wumpas %d wdelay %d wwait %.2f cwait %.2f ldelay %d lwait %.2f new_mode %d new_level %d",
++                     plr_bonus_wumpas.count, bonus_wumpa_delay, bonus_wumpa_wait, bonus_crates_wait,
++                     bonus_life_delay, bonus_lives_wait, new_mode, new_level);
++        port_log("bonus: f%d Bonus %d pos %.2f %.2f %.2f momy %.3f dead %d die %.2f/%.2f shadow %.1f ground %d surf %d restart %d bff %d crates %d lives %d",
++                 frame, Bonus, c->obj.pos.x, c->obj.pos.y, c->obj.pos.z, c->obj.mom.y, c->obj.dead,
++                 c->obj.die_time, c->obj.die_duration, c->obj.shadow, c->obj.ground, c->obj.surface_type,
++                 bonus_restart, bonus_finish_frame, save_bonus_crates_destroyed, bonus_lives);
++    }
++    for (i = 0; i < nt; i++) {
++        float x = tx[i], y = ty[i], z = tz[i];
++        struct creature_s *c = &Character[0];
++        if (frame != at[i]) continue;
++        if (bonus_tp[i]) {
++            struct rail_s *r = &Rail[5];
++            if (r->type != -1 && r->pINPLAT != NULL) {
++                struct nuvec_s *v = (struct nuvec_s *)r->pINPLAT->pts;
++                x = v->x; y = v->y + 1.0f; z = v->z;
++            } else {
++                port_log("teleport: level has no bonus rail");
++                continue;
++            }
++        }
++        c->obj.pos.x = x; c->obj.pos.y = y; c->obj.pos.z = z;
++        c->obj.oldpos = c->obj.pos;
++        port_log("teleport player to %.2f %.2f %.2f", x, y, z);
++    }
++}
++
++/* debug aid (CWOC_STRETCHLOG=1, tools/ppc2c.py HOOKS): joint scale and extent
++ * of every skinned model drawn by the translated DrawCharacterModel */
++s32 port_hook_NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hgobj, struct numtx_s *wm, int nlayers, short *layers,
++                                struct numtx_s *tmtx, float **dwa) {
++    static int on = -1;
++    extern void port_log(const char *fmt, ...);
++    extern int port_frame_count(void);
++    if (on < 0) on = getenv("CWOC_STRETCHLOG") != NULL;
++    if (on && hgobj != NULL && tmtx != NULL) {
++        s32 j, n = hgobj->num_joints, jmax = 0;
++        float smin = 1e9f, smax = 0.0f, ext = 0.0f;
++        for (j = 0; j < n; j++) {
++            struct numtx_s *t = &tmtx[j];
++            float c0 = t->_00 * t->_00 + t->_01 * t->_01 + t->_02 * t->_02;
++            float c1 = t->_10 * t->_10 + t->_11 * t->_11 + t->_12 * t->_12;
++            float c2 = t->_20 * t->_20 + t->_21 * t->_21 + t->_22 * t->_22;
++            float dx = t->_30 - tmtx[0]._30, dy = t->_31 - tmtx[0]._31, dz = t->_32 - tmtx[0]._32;
++            float d = dx * dx + dy * dy + dz * dz;
++            if (c0 < smin) smin = c0;
++            if (c1 < smin) smin = c1;
++            if (c2 < smin) smin = c2;
++            if (c0 > smax) smax = c0;
++            if (c1 > smax) smax = c1;
++            if (c2 > smax) smax = c2;
++            if (d > ext) { ext = d; jmax = j; }
++        }
++        port_log("stretch f%d hobj %p nj %d s2 %.3f..%.3f ext2 %.3f j%d pos %.1f %.1f %.1f", port_frame_count(),
++                 (void *)hgobj, n, smin, smax, ext, jmax, wm ? wm->_30 : 0.0f, wm ? wm->_31 : 0.0f,
++                 wm ? wm->_32 : 0.0f);
++    }
++    return NuHGobjRndrMtxDwa(hgobj, wm, nlayers, layers, tmtx, dwa);
++}
++#endif
+diff --git a/src/gamecode/credits.c b/src/gamecode/credits.c
+index 9e9cd41..541c0a6 100644
+--- a/src/gamecode/credits.c
++++ b/src/gamecode/credits.c
+@@ -2,7 +2,9 @@
+ #include <string.h>
+ 
+ s32 CREDITCOUNT;
++#ifndef PORT
+ struct CREDIT_s Credit [323];
++#endif
+ f32 credit_speed;
+ f32 credit_time;
+ 
+@@ -13,6 +15,9 @@ struct CREDIT_s
+     short colour; // Offset: 0x4, DWARF: 0x188EC6
+     short size; // Offset: 0x6, DWARF: 0x188EEF
+ };
++#ifdef PORT
++struct CREDIT_s Credit [323];
++#endif
+ 
+ static const unsigned long D3DSIMPLERENDERSTATEENCODE[82] = {
+     0x00040260, 0x00040264, 0x00040268, 0x0004026C, 0x00040270, 0x00040274,
+diff --git a/src/gamecode/cut.c b/src/gamecode/cut.c
+index 58377dc..5be21e3 100644
+--- a/src/gamecode/cut.c
++++ b/src/gamecode/cut.c
+@@ -111,6 +111,19 @@ struct instNUGCUTSCENE_s {
+     struct NUGCUTSCENE_s *cutscene;
+     struct nuvec_s centre;
+     float maxdistsqr;
++#ifdef PORT
++    int : 22; /* PORT: big-endian bit positions (fields reversed) */
++    int been_updated_this_frame:1;
++    int is_disabled:1;
++    int is_visible:1;
++    int checkmaxdist:1;
++    int checkbboxclip:1;
++    int has_mtx:1;
++    int autostart:1;
++    int looping:1;
++    unsigned int is_playing:1;
++    int played_first_frame:1;
++#else
+     int played_first_frame:1;
+     unsigned int is_playing:1;
+     int looping:1;
+@@ -121,6 +134,7 @@ struct instNUGCUTSCENE_s {
+     int is_visible:1;
+     int is_disabled:1;
+     int been_updated_this_frame:1;
++#endif
+     float cframe;
+     float rate;
+     void *icameras;
+@@ -143,9 +157,19 @@ short RO_640460[8];
+ struct anim_s CutAnim;
+ struct GTimer CutTimer;
+ s32 CutAudio[32];
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct NUGCUTLOCFNDATA_s cutscene_locatorfns[2];
++#else
+ static struct NUGCUTLOCFNDATA_s cutscene_locatorfns[2];
+-static struct instNUGCUTSCENE_s *CutInst[32];
+-static struct NUGCUTSCENE_s *CutScene[32];
++#endif
++#ifndef PORT
++static
++#endif
++struct instNUGCUTSCENE_s *CutInst[32];
++#ifndef PORT
++static
++#endif
++struct NUGCUTSCENE_s *CutScene[32];
+ struct anim_s CutVortexAnim;
+ struct nuvec_s campos_SPACE;
+ u16 cutang_FRONTEND[2];
+@@ -174,11 +198,20 @@ struct nucolour3_s cutdircol[3];
+ struct nuvec_s cutambcol;
+ struct nuvec_s cutdir[3];
+ 
+-static s32 cutdebgroups[32];
++#ifndef PORT
++static
++#endif
++s32 cutdebgroups[32];
+ static s32 ghg_inst_count;
+ static struct ghg_inst_s ghg_insts[32];
+-static s32 scene_inst_count;
+-static struct scene_inst_s scene_insts[32];
++#ifndef PORT
++static
++#endif
++s32 scene_inst_count;
++#ifndef PORT
++static
++#endif
++struct scene_inst_s scene_insts[32];
+ static s32 music_volume;
+ struct csc_s *CutChar;
+ s32 loadcut_chardatfile;
+@@ -218,18 +251,45 @@ extern float DIVPANEL3DY;
+ extern float PANEL3DMULX;
+ extern float PANEL3DMULY;
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct csc_s csc_titles[];
++#else
+ static struct csc_s csc_titles[] = {{NULL, NULL, NULL}};
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct cutscenedesc_s csd_titles[];
++#else
+ static struct cutscenedesc_s csd_titles[] = {{NULL, NULL, -1, 0}};
++#endif
+ static struct csc_s csc_s32ro1[] = {{NULL, NULL, NULL}};
+ static struct cutscenedesc_s csd_s32ro1[] = {{NULL, NULL, -1, 0}};
+ static struct csc_s csc_s32ro2[] = {{NULL, NULL, NULL}};
+ static struct cutscenedesc_s csd_s32ro2[] = {{NULL, NULL, -1, 0}};
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct csc_s csc_outro[];
++#else
+ static struct csc_s csc_outro[] = {{NULL, NULL, NULL}};
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct cutscenedesc_s csd_outro[];
++#else
+ static struct cutscenedesc_s csd_outro[] = {{NULL, NULL, -1, 0}};
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct csc_s csc_outro2[];
++#else
+ static struct csc_s csc_outro2[] = {{NULL, NULL, NULL}};
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct cutscenedesc_s csd_outro2[];
++#else
+ static struct cutscenedesc_s csd_outro2[] = {{NULL, NULL, -1, 0}};
++#endif
+ 
+-static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene);
++#ifndef PORT
++static
++#endif
++void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene);
+ void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene,struct NUGCUTSCENE_s *cutscene,
+                                 struct instNUGCUTCHAR_s *icutchar,struct NUGCUTCHAR_s *cutchar,
+                                 float current_frame);
+@@ -311,7 +371,10 @@ static struct nuscene_s * InstNuGScnRead(union variptr_u *ptr,union variptr_u *e
+ }
+ 
+ //NGC MATCH //inline with InitCutScenes??
+-static void CutSceneEndFunction(void *icutscene) {
++#ifndef PORT
++static
++#endif
++void CutSceneEndFunction(void *icutscene) {
+     if (cutmovie == 0) {
+         NewMenu(&Cursor,0,0,-1);
+         if (logos_played == 0) {
+@@ -325,7 +388,10 @@ static void CutSceneEndFunction(void *icutscene) {
+ }
+ 
+ //NGC MATCH //inline with InitCutScenes??
+-static void CutSceneNextFunction(void *icutscene) {
++#ifndef PORT
++static
++#endif
++void CutSceneNextFunction(void *icutscene) {
+     cutworldix++;
+     if (CutAudio[cutworldix] != -1) {
+         NuSoundStopStream(4);
+@@ -343,7 +409,10 @@ static void CutSceneNextFunction(void *icutscene) {
+ }
+ 
+ //NGC MATCH //inline with InitCutScenes??
+-static void CutSceneNextLogoFunction(void *icutscene) {
++#ifndef PORT
++static
++#endif
++void CutSceneNextLogoFunction(void *icutscene) {
+     cutworldix++;
+     NewMenu(&Cursor,0,0,-1);
+     if (logos_played == 0) {
+@@ -601,7 +670,10 @@ static struct NUHGOBJ_s* FindCutChar(char* name)
+ }
+ 
+ //PS2
+-static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene)
++#ifndef PORT
++static
++#endif
++void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene)
+ {    
+     struct NUGCUTCHARSYS_s *charSys;
+     struct NUGCUTCHAR_s *cutchar;
+@@ -1003,7 +1075,10 @@ void CloseCutMovie(s32 all)
+ 
+ 
+ //part of cutscene_locatorfns variable
+-static void locatorfn_fadeout(struct instNUGCUTSCENE_s *icutscene,struct NUGCUTLOCATORSYS_s *locatorsys, struct instNUGCUTLOCATOR_s *ilocator,struct NUGCUTLOCATOR_s *locator,float currf,struct numtx_s *wm) {
++#ifndef PORT
++static
++#endif
++void locatorfn_fadeout(struct instNUGCUTSCENE_s *icutscene,struct NUGCUTLOCATORSYS_s *locatorsys, struct instNUGCUTLOCATOR_s *ilocator,struct NUGCUTLOCATOR_s *locator,float currf,struct numtx_s *wm) {
+     struct nuanimtime_s atime;
+     float remaining;
+     
+diff --git a/src/gamecode/deb3.c b/src/gamecode/deb3.c
+index 14000df..859e81d 100644
+--- a/src/gamecode/deb3.c
++++ b/src/gamecode/deb3.c
+@@ -129,8 +129,14 @@ s32 StartHGobjAnim(struct nuhspecial_s *obj);
+ void DebrisEmitterOrientation(s32 key, short emitrotz, short emitroty);
+ void LaunchObjects(void);
+ 
+-static float gauntletFarOffset = 80.0f;
+-static float gauntletWobble = 200.0f;
++#ifndef PORT
++static
++#endif
++float gauntletFarOffset = 80.0f;
++#ifndef PORT
++static
++#endif
++float gauntletWobble = 200.0f;
+ 
+ struct rbclass_s rbclass[5];
+ volatile ELEC H2OElec[22];
+@@ -650,7 +656,11 @@ void JonExtraDraw(void) {
+         vec.y += (NuTrigTable[(u16)(masky / 0x3c)] * 0.75f);
+         vec.z = NuTrigTable[(u16)((maskx / 0x3c) + 0x4000)] * 3.0f + vec.z;
+         if (i != -1) {
++#ifdef PORT /* via s32 like the PPC (negative angles) */
++            Draw3DCharacter(&vec, 0, (u16)(s32)(NuTrigTable[(u16)(maskrot / 0x3c)] * 8192.0f), 0, 1.0f, &CModel[i], -1, 1.0f, 0);
++#else
+             Draw3DCharacter(&vec, 0, (u16)(NuTrigTable[(u16)(maskrot / 0x3c)] * 8192.0f), 0, 1.0f, &CModel[i], -1, 1.0f, 0);
++#endif
+             vec.y += 0.2f;
+             if (Paused == 0) {
+                 AddVariableShotDebrisEffect(GDeb[d].i, &vec, 1, 0, 0);
+@@ -698,7 +708,10 @@ void JonExtraDraw(void) {
+ }
+ 
+ //NGC MATCH
+-static void DrawDeb3() {
++#ifndef PORT
++static
++#endif
++void DrawDeb3() {
+   struct nuvec_s pos;
+   struct deb3_s *deb;
+   float r;
+diff --git a/src/gamecode/font3d.c b/src/gamecode/font3d.c
+index 3f05987..3c51746 100644
+--- a/src/gamecode/font3d.c
++++ b/src/gamecode/font3d.c
+@@ -36,8 +36,14 @@ float FONT3D_JSCALEDX = 1.0f;
+ float FONT3DSIZE = 1.0f;
+ float FONT3DYMUL = 1.0f;
+ 
+-static s16 rrri;
+-static s16 rrrt;
++#ifndef PORT
++static
++#endif
++s16 rrri;
++#ifndef PORT
++static
++#endif
++s16 rrrt;
+ 
+ //NGC MATCH
+ s32 RemapAccentedCharacter(char* c) {
+@@ -261,8 +267,16 @@ void InitFont3D(struct nugscn_s* gscn) {
+     return;
+ }
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern char j_bc[2][11];
++#else
+ static char j_bc[2][11];
++#endif
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern char j_bd[2][41];
++#else
+ static char j_bd[2][41];
++#endif
+ 
+ //NGC MATCH
+ s32 CombinationCharacterBD(char c0,char c1) {
+diff --git a/src/gamecode/game.c b/src/gamecode/game.c
+index 061c06d..3bd2032 100644
+--- a/src/gamecode/game.c
++++ b/src/gamecode/game.c
+@@ -389,7 +389,11 @@ extern char* tYES[6];
+ extern char* tDONE[6];
+ extern char* tCANCEL[6];
+ extern char* tGAMEOVER[6];
++#ifdef PORT
++extern char NameInputTable[7][4]; /* DWARF: char[7][4], 0x1C bytes */
++#else
+ extern char* NameInputTable[53];
++#endif
+ extern char edit_txt[64];
+ extern s32 LANGUAGEOPTION;
+ extern s32 InvincibilityCHEAT;
+@@ -484,8 +488,15 @@ extern struct nugspline_s *death_pPLAT;
+ extern f32 death_time;
+ extern s32 DemoLevel[4];
+ extern s32 DESTRUCTIBLECRATECOUNT;
+-static f32 MENUDY;
++#ifndef PORT
++static
++#endif
++f32 MENUDY;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern f32 dme_sx;
++#else
+ static f32 dme_sx;
++#endif
+ extern f32 dme_sy;
+ extern f32 dme_symul;
+ extern f32 dme_yadj;
+@@ -1723,8 +1734,13 @@ void UpdateWumpa(void) {
+     for (i = 0; i < 8; i++, info++) {
+         info->angle -= info->spin;
+         info->dy = NuTrigTable[a[0]] * 0.05f;
++#ifdef PORT /* via s32 like the PPC (fctiwz): ARM saturates negative floats to 0 for unsigned */
++        xrot = (s32)(NuTrigTable[a[1]] * 2048.0f);
++        zrot = (s32)(NuTrigTable[a[2]] * 2048.0f);
++#else
+         xrot = NuTrigTable[a[1]] * 2048.0f;
+         zrot = NuTrigTable[a[2]] * 2048.0f;
++#endif
+         info->m = numtx_identity;
+         s.x = s.y = s.z = info->scale;
+         NuMtxSetScale(&info->m,&s);
+@@ -2111,7 +2127,7 @@ s32 Draw3DCharacter(struct nuvec_s *pos,u16 xrot,u16 yrot,u16 zrot,float scale,s
+ //NGC MATCH
+ void NewMask(struct mask_s *mask,struct nuvec_s *pos) {
+   
+-  if ((CRemap[3] != -1) && ((LBIT & 0x3e00000) == 0)) {
++  if ((CRemap[3] != -1) && ((PORT_W64(LBIT) & 0x3e00000) == 0)) {
+     if (mask->active < 2) {
+       if (mask->active == 0) {
+         if (pos != NULL) {
+@@ -2457,7 +2473,7 @@ void UpdateMask(struct mask_s *mask, struct obj_s *obj) {
+                     player->spin_frames - player->OnFootMoveInfo->SPINRESETFRAMES) {
+                 i = 0;
+             } else {
+-                i = (LBIT & 0x400000040) ? 0 : 3;
++                i = (PORT_W64(LBIT) & 0x400000040) ? 0 : 3;
+                 if (mask->active > 2 && player->spin != 0 &&
+                     (player->spin_frame == 0 ||
+                      player->spin_frame <
+@@ -4854,7 +4870,7 @@ void InitVehicleToggles(void) {
+       tog->yrot = TempRPos.angle;
+       tog->zrot = 0;
+       tog->xrot = 0;
+-      if ((tog->type != 0) || ((LBIT & 0x10080010) == 0)) {
++      if ((tog->type != 0) || ((PORT_W64(LBIT) & 0x10080010) == 0)) {
+         y = NewShadowMask(&tog->pos,0.0f,-1);
+         if (y != 2000000.0f) {
+           tog->pos.y = y;
+@@ -4903,7 +4919,7 @@ void ResetVehicleControl(s32 iRAIL,s32 iALONG,f32 fALONG) {
+         if (found == 0) {
+           if (tog->type == 1) {
+             VEHICLECONTROL = 1;
+-          } else if (LBIT & 0x400000040ULL) {
++          } else if (PORT_W64(LBIT) & 0x400000040ULL) {
+             VEHICLECONTROL = 2;
+           } else {
+             VEHICLECONTROL = 0;
+@@ -4935,7 +4951,7 @@ void ResetVehicleControl(s32 iRAIL,s32 iALONG,f32 fALONG) {
+         } else {
+           if (found == 0) {
+             if (tog->type == 1) {
+-              if (LBIT & 0x400000040ULL) {
++              if (PORT_W64(LBIT) & 0x400000040ULL) {
+                 VEHICLECONTROL = 2;
+               } else {
+                 VEHICLECONTROL = 0;
+@@ -5085,7 +5101,7 @@ void ToggleVehicle(struct creature_s *c) {
+             vtog_oldpos = c->obj.pos;
+             if (vt->type == 0) {
+                 VEHICLECONTROL = 1;
+-            } else if ((LBIT & 0x400000040ULL) != 0) {
++            } else if ((PORT_W64(LBIT) & 0x400000040ULL) != 0) {
+                 VEHICLECONTROL = 2;
+             } else {
+                 VEHICLECONTROL = 0;
+@@ -5162,6 +5178,7 @@ void ToggleVehicle(struct creature_s *c) {
+     }
+ }
+ 
++#ifndef PORT /* duplicate of the DOL-backed definition in another unit */
+ void GetLocatorMtx(struct CharacterModel *Model,struct numtx_s *LocMtx,f32 YAngOff3)
+ {
+   /*
+@@ -5187,6 +5204,7 @@ struct NUPOINTOFINTEREST_s *ptr;
+   return;
+ */
+ }
++#endif
+ 
+ //NGC MATCH
+ void DefaultGame(void) {
+@@ -6374,7 +6392,7 @@ void CheckFinish(struct obj_s* obj) {
+                 Game.hub[Hub].flags = Game.hub[Hub].flags | 2;
+             }
+         }
+-        if ((LBIT & 0x3e00000) != 0) {
++        if ((PORT_W64(LBIT) & 0x3e00000) != 0) {
+             Game.level[Level].flags |= 0x800;
+         } else {
+             if (TimeTrial != 0) {
+@@ -6430,7 +6448,7 @@ void CheckFinish(struct obj_s* obj) {
+         return;
+     }
+     if (obj->finished == 1) {
+-        if (((LBIT & 0x3e00000) != 0) && ((new_lev_flags & 0x800) != 0)) {
++        if (((PORT_W64(LBIT) & 0x3e00000) != 0) && ((new_lev_flags & 0x800) != 0)) {
+             new_lev_flags = new_lev_flags ^ 0x800;
+             Game.level[Level].flags = Game.level[Level].flags | 0x800;
+         }
+@@ -6783,7 +6801,7 @@ void InitLevel(void) {
+                         }
+             break;
+         }
+-  if ((LBIT & 0x3e00000) != 0) {
++  if ((PORT_W64(LBIT) & 0x3e00000) != 0) {
+     Mask.active = 0;
+   }
+   ai_lookpos = v000;
+@@ -6821,7 +6839,7 @@ void InitLevel(void) {
+   plr_invisibility_time = 5.0f;
+   in_finish_range = 0;
+   LivesLost = 0;
+-  if ((LBIT & 0x3e00000) != 0) {
++  if ((PORT_W64(LBIT) & 0x3e00000) != 0) {
+     Mask.active = 0;
+   }
+   ResetAkuAkuAdvice();
+@@ -7356,10 +7374,17 @@ extern struct ldata_s *LDATA;
+ extern char* LanguageName[6];
+ extern s32 Level;
+ extern char* LevelName[44][6];
+-static float MENUDY;
++#ifndef PORT
++static
++#endif
++float MENUDY;
+ extern float PANELMENUX;
+ extern s32 TimeTrial;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern float dme_sx;
++#else
+ static float dme_sx;
++#endif
+ extern s32 highallocaddr;
+ extern s32 pause_dir;
+ extern union variptr_u superbuffer_base;
+@@ -8349,10 +8374,36 @@ s32 PlayerObjectAnimCollision(struct obj_s *obj,struct nuspecial_s *special,floa
+   return 0;
+ }
+ 
++#ifdef PORT
++/* Falling off a ledge with no terrain below (jungle_r's bonus round has no
++ * floor under most of its platforms) never reached a deadly surface: the
++ * player fell forever (and, in a bonus round, the round never ended). Kill a
++ * player who is airborne over no terrain well below the last ground touched,
++ * as a deadly floor would (die 5, the pit death). */
++static void port_fall_failsafe(struct creature_s *plr) {
++    s32 KillPlayer(struct obj_s *player_obj, s32 die);
++    static f32 ground_y;
++    static s32 ground_level = -1;
++    struct obj_s *o = &plr->obj;
++    if (ground_level != Level || o->dead != 0 || o->ground != 0 || o->transporting != 0) {
++        ground_level = Level;
++        ground_y = o->pos.y;
++        return;
++    }
++    if (o->shadow == SAFEY && VEHICLECONTROL == 0 && o->finished == 0 && Bonus != 1 && Bonus != 3 &&
++        o->mom.y < 0.0f && o->pos.y < ground_y - 20.0f) {
++        KillPlayer(o, 5);
++    }
++}
++#endif
++
+ //NGC MATCH
+ void BonusTiming(struct creature_s *plr) {
+     s32 dead;
+ 
++#ifdef PORT
++    port_fall_failsafe(plr);
++#endif
+     dead = 0;
+     if (Bonus == 2 && plr->obj.dead != 0) {
+         dead = 1;
+@@ -8639,7 +8690,7 @@ void InitSplineTable(void) {
+   if (world_scene[0] != NULL) {
+     for (i = 0; i < 0x49; i++) {
+       SplTab[i].spl = NULL;
+-      if (((SplTab[i].levbits >> Level) & 1) != 0) {
++      if (((PORT_W64(SplTab[i].levbits) >> Level) & 1) != 0) {
+         SplTab[i].spl = NuSplineFind(world_scene[0],SplTab[i].name);
+         if (SplTab[i].spl != NULL) {
+           if ((SplTab[i].min > 0) && (SplTab[i].spl->len < SplTab[i].min)) {
+@@ -8670,7 +8721,7 @@ void InitObjectTable(void) {
+ 
+   for (i = 0; i < 0xc9; i++) {
+     ObjTab[i].obj.special = NULL;
+-    if ((((ObjTab[i].levbits >> Level) & 1) != 0) && (*ObjTab[i].scene != NULL)) {
++    if ((((PORT_W64(ObjTab[i].levbits) >> Level) & 1) != 0) && (*ObjTab[i].scene != NULL)) {
+       if (NuSpecialFind(*ObjTab[i].scene,&ObjTab[i].obj,ObjTab[i].name) != 0) {
+         (ObjTab[i].obj.special)->instance->flags.visible = ObjTab[i].visible;
+         for (j = 0; j < 0x1a; j++) {
+@@ -8890,12 +8941,20 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
+       if (((angle == NULL) & 1) == 0) {
+         a = SplinePointAngle(spl,j);
+         d = RotDiff(*angle,a);
++#ifdef PORT /* via s32 like the PPC: ARM saturates a negative float to 0 for u16 */
++        *angle += (u16)(s32)(f * d);
++#else
+         *angle += (u16)(f * d);
++#endif
+       }
+       if (tilt != NULL) {
+         a = SplinePointTilt(spl,j);
+         d = RotDiff(*tilt,a);
++#ifdef PORT /* via s32 like the PPC: ARM saturates a negative float to 0 for u16 */
++        *tilt += (u16)(s32)(f * d);
++#else
+         *tilt += (u16)(f * d);
++#endif
+       }
+     }
+   }
+diff --git a/src/gamecode/game_deb.c b/src/gamecode/game_deb.c
+index 72dd8ae..5aade31 100644
+--- a/src/gamecode/game_deb.c
++++ b/src/gamecode/game_deb.c
+@@ -83,7 +83,7 @@ void InitGameDebris(void) {
+   
+   for(i = 0; i < 170; i++) {
+     GDeb[i].i = -1;
+-    if (((GDeb[i].levbits >> Level) & 1) != 0) {
++    if (((PORT_W64(GDeb[i].levbits) >> Level) & 1) != 0) {
+       GDeb[i].i = LookupDebrisEffect(GDeb[i].name);
+     }
+   }
+@@ -129,6 +129,10 @@ void AddWarpDebris(struct obj_s *obj,struct nuvec_s *pos) {
+   v.y = (obj->bot + obj->top) * obj->SCALE * 0.5f + (obj->pos).y;
+   v.z = (obj->pos).z;
+   AddFiniteShotDebrisEffect(&key,GDeb[77].i,&v,1);
++#ifdef PORT /* debug: frame-by-frame screenshots of the warp (CWOC_SHOT_DIR) */
++  { extern void port_shot_burst(int n); extern void port_gx_trace_later(int f, int n);
++    port_shot_burst(80); port_gx_trace_later(3, 200000); }
++#endif
+   return;
+ }
+ 
+@@ -190,7 +194,7 @@ void AddAnimDebris(struct CharacterModel *model,struct numtx_s *mtxLOCATOR,s32 a
+       return;
+   }
+   for(adeb = ADeb; adeb->character != -1; adeb++) {
+-      if (((model->character == adeb->character) && (action == adeb->action)) && (((adeb->levbits >> Level) & 1) != 0)) {
++      if (((model->character == adeb->character) && (action == adeb->action)) && (((PORT_W64(adeb->levbits) >> Level) & 1) != 0)) {
+         if (((obj == NULL) || ((((adeb->flags & 0x10) == 0 || ((obj->ground & 2U) != 0)) &&
+              (((adeb->flags & 0x80) == 0 || (obj->submerged == 0)))))) && (((adeb->flags & 4) != 0 ||
+             (((((adeb->flags & 8) != 0 && (time >= adeb->time)) &&
+diff --git a/src/gamecode/game_obj.c b/src/gamecode/game_obj.c
+index b3280b9..203c12c 100644
+--- a/src/gamecode/game_obj.c
++++ b/src/gamecode/game_obj.c
+@@ -2480,7 +2480,7 @@ void PickupItem(struct obj_s* obj) {
+             case 0xA5:
+             case 0xA6:
+             case 0xA7:
+-                if ((LBIT & 0x03E00000) != 0) {
++                if ((PORT_W64(LBIT) & 0x03E00000) != 0) {
+                     boss_dead = 2;
+                 }
+                 PickupPower(obj->character);
+diff --git a/src/gamecode/jeep.c b/src/gamecode/jeep.c
+index 4577bcc..2bf5bdc 100644
+--- a/src/gamecode/jeep.c
++++ b/src/gamecode/jeep.c
+@@ -201,9 +201,17 @@ struct FIREBOSSSTRUCT {
+   void *Rock;
+ };
+ 
++#ifdef PORT /* full layout (16 bytes): GDeb[] is indexed here */
++struct gdeb_s {
++    s32 i;
++    char *name;
++    u64 levbits;
++};
++#else
+ struct gdeb_s {
+   s32 i;
+ };
++#endif
+ 
+ extern s32 VEHICLECONTROL;
+ extern struct nuvec_s WorldAxis[3];
+@@ -252,14 +260,22 @@ extern struct SIMWHEEL GenericTrail[1];
+ 
+ struct nuvec_s SetNuVec(f32 x,f32 y,f32 z);
+ struct nuvec_s *SetNuVecPntr(f32 x,f32 y,f32 z);
++#ifndef PORT
+ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,short *angle,short *tilt);
++#endif
+ struct numtx_s *DrawJeep(struct JEEPSTRUCT *Jeep);
+ struct BUGSAVE *LoadBuggyData(struct BUGSAVE *Data,s32 Indx);
+ s32 CurrentWesternPosition(void);
+ void ProcessJeepTrails(void);
+ 
+-static f32 JeepCamX;
+-static f32 JeepCamY;
++#ifndef PORT
++static
++#endif
++f32 JeepCamX;
++#ifndef PORT
++static
++#endif
++f32 JeepCamY;
+ 
+ struct nuvec_s BaseWheelPosition[6];
+ struct enemyjeep_s EnemyJeep[4];
+diff --git a/src/gamecode/main.c b/src/gamecode/main.c
+index d573907..4d84bc7 100644
+--- a/src/gamecode/main.c
++++ b/src/gamecode/main.c
+@@ -1,5 +1,9 @@
+ #include "../nu.h"
+ #include "gamecode/main.h"
++#ifdef PORT
++int port_skip_intro(void);
++int port_skip_logos(void);
++#endif
+ /*
+   8004f584 0000bc 8004f584  4 InitTexAnimScripts 	Global
+   8004f640 000168 8004f640  4 SetTexAnimSignals 	Global
+@@ -45,10 +49,17 @@ s32 superbuffersize;
+ union variptr_u superbuffer_reset_base;
+ struct nugscn_s* font3d_scene;
+ struct nuscene_s* font3d_scene2;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct txanmlist texanimscripts[24];
++#else
+ static struct txanmlist texanimscripts[24];
++#endif
+ char texanimbuff[32768];
+ u32 texanimbits;
+-static struct numtl_s* fade_mtl;
++#ifndef PORT
++static
++#endif
++struct numtl_s* fade_mtl;
+ int fade_rate;
+ int fadeval;
+ int fadehack;
+@@ -98,15 +109,28 @@ extern volatile s32 crash_loaded;
+ void ResetCheckpoint(s32 iRAIL, s32 iALONG, float fALONG, struct nuvec_s *pos);
+ 
+ 
++#ifdef PORT
++/* The GameCube's 0x5BAE14-byte super buffer is too small for some levels in
++   the port (western.ter is read past its end with no size limit, which
++   corrupted the heap). There is RAM to spare: add 16 MB. */
++#define PORT_SUPERBUFFER_SIZE (0x5bae14 + 0x1000000)
++#endif
++
+ //NGC MATCH
+ void ResetSuperBuffer(void) {
+   if (superbuffersize != (double)0x4156eb851eb851ec) {
+     if (superbuffer_base.voidptr != NULL) {
+       NuMemFree(superbuffer_base.voidptr);
+     }
++#ifdef PORT
++    superbuffer_base.voidptr = NuMemAlloc(PORT_SUPERBUFFER_SIZE);
++
++    superbuffersize = PORT_SUPERBUFFER_SIZE;
++#else
+     superbuffer_base.voidptr = NuMemAlloc(0x5bae14);
+ 
+     superbuffersize = 0x5bae14;
++#endif
+     superbuffer_reset_base = superbuffer_base;
+     superbuffer_end.voidptr = (superbuffer_base.voidptr + superbuffersize);
+     if (superbuffer_base.voidptr == NULL) {
+@@ -123,10 +147,17 @@ void ResetSuperBuffer2(void) {
+         if (superbuffer_base.voidptr != NULL) {
+             NuMemFree(superbuffer_base.voidptr);
+         }
++#ifdef PORT
++        superbuffer_base.voidptr = NuMemAlloc(PORT_SUPERBUFFER_SIZE);
++        superbuffersize = PORT_SUPERBUFFER_SIZE;
++        superbuffer_reset_base = superbuffer_base;
++        superbuffer_end.intaddr = superbuffer_base.intaddr + PORT_SUPERBUFFER_SIZE;
++#else
+         superbuffer_base.voidptr = NuMemAlloc(0x5bae14);
+         superbuffersize = 0x5bae14;
+         superbuffer_reset_base = superbuffer_base;
+         superbuffer_end.intaddr = (superbuffer_base.intaddr + 6008340.48);
++#endif
+         if (superbuffer_base.voidptr == NULL) {
+             NuErrorProlog("C:/source/crashwoc/code/gamecode/main.c",0x5e2)
+             ("unable to allocate super buffer");
+@@ -150,7 +181,7 @@ void InitTexAnimScripts(void)	//PS2
+     memset(texanimbuff, 0, sizeof(texanimbuff));
+ 
+     while( list->path != NULL ) {
+-        if ((list->levbits & LBIT) != 0){
++        if ((PORT_W64(list->levbits) & PORT_W64(LBIT)) != 0){
+             prog = NuTexAnimProgReadScript(&ptr, list->path);
+             if (prog == NULL) {
+                 NuDebugMsgProlog(".\\main.c", 0x4ed);
+@@ -406,12 +437,12 @@ void InitWorld(void) {
+                 world_scene[4] = world_scene2[4]->gscene;
+             }
+         }
+-        if ((LBIT & 0x400000) != 0) {
++        if ((PORT_W64(LBIT) & 0x400000) != 0) {
+             world_scene2[2] = NuSceneReader(&superbuffer_ptr, &superbuffer_end, "stuff\\redbits.nus");
+             if (world_scene2[2] != NULL) {
+                 world_scene[2] = world_scene2[2]->gscene;
+             }
+-        } else if ((LBIT & 0x00000005a031894d) != 0) {
++        } else if ((PORT_W64(LBIT) & 0x00000005a031894d) != 0) {
+             world_scene2[2] = NuSceneReader(&superbuffer_ptr, &superbuffer_end, "stuff\\jeepbits.nus");
+             if (world_scene2[2] != NULL) {
+                 world_scene[2] = world_scene2[2]->gscene;
+@@ -567,7 +598,7 @@ void LoadLevel(void) {
+     }
+     InitTexAnimScripts();
+     InitCreatureModels();
+-    if ((LBIT & 0x200000a1) != 0) {
++    if ((PORT_W64(LBIT) & 0x200000a1) != 0) {
+         InitClouds(&superbuffer_ptr, &superbuffer_end);
+     }
+     if ((LDATA->flags & 0x40) != 0) {
+@@ -703,7 +734,7 @@ void DoInput(void) {
+          (((new_level == -1 && (fadeval == 0)) && ((GameMode != 1 && (cutmovie == -1)))))) {
+         if ((((Paused == 0) && (Cursor.menu == -1)) && ((PLAYERCOUNT == 0 || (((player->obj).finished == 0 &&
+               (((Level != 0x25 || !(tumble_time < tumble_duration)) || (last_hub == -1)))))))) &&
+-           (((LBIT & 0x3e00000) == 0 || (boss_dead != 2)))) {
++           (((PORT_W64(LBIT) & 0x3e00000) == 0 || (boss_dead != 2)))) {
+           PauseGame();
+           sfx = 0x36;
+         }
+@@ -740,6 +771,10 @@ void DoInput(void) {
+ 
+ //NGC MATCH
+ void TBCODESTART(s32 i,char *txt) {
++#ifdef PORT
++  tbslotBegin(app_tbset, 20 + (i & 3)); /* every tick, for the port profile */
++  return;
++#endif
+   if (((FRAME == 0) && (i_tb_code == i)) && (strlen(txt) < 0x10)) {
+     strcpy(tbtxt[8],txt);
+     tbslotBegin(app_tbset,8);
+@@ -749,6 +784,10 @@ void TBCODESTART(s32 i,char *txt) {
+ 
+ //NGC MATCH
+ void TBCODEEND(s32 i) {
++#ifdef PORT
++  tbslotEnd(app_tbset, 20 + (i & 3));
++  return;
++#endif
+   if ((FRAME == 0) && (i_tb_code == i)) {
+     tbslotEnd(app_tbset,8);
+   }
+@@ -757,6 +796,10 @@ void TBCODEEND(s32 i) {
+ 
+ //NGC MATCH
+ void TBDRAWSTART(s32 i,char *txt) {
++#ifdef PORT
++  tbslotBegin(app_tbset, 24 + (i & 7));
++  return;
++#endif
+   if ((i_tb_draw == i) && (strlen(txt) < 0x10)) {
+     strcpy(tbtxt[0xb],txt);
+     tbslotBegin(app_tbset,0xb);
+@@ -766,6 +809,10 @@ void TBDRAWSTART(s32 i,char *txt) {
+ 
+ //NGC MATCH
+ void TBDRAWEND(s32 i) {
++#ifdef PORT
++  tbslotEnd(app_tbset, 24 + (i & 7));
++  return;
++#endif
+   if (i_tb_draw == i) {
+     tbslotEnd(app_tbset,0xb);
+   }
+@@ -856,7 +903,7 @@ void SetLevel(void) {
+   s32 farclip;
+ 
+   LDATA = &LData[Level];
+-  LBIT = (u64)1 << Level;
++  LBIT = PORT_W64((u64)1 << Level);
+   if (pNuCam != NULL) {
+     farclip = LDATA->farclip;
+     if ((u32)farclip > 9) {
+@@ -1313,11 +1360,20 @@ s32 force_menu;
+ s32 frameout;
+ long frameout_count;
+ s32 just_continued;
+-static s32 number_of_times_played;
++#ifndef PORT
++static
++#endif
++s32 number_of_times_played;
+ float AtmosphericPressureHackedZ;
+ float snowflake_scale;
+-static s32 level_clearcolour;
+-static s32 level_fogcolour;
++#ifndef PORT
++static
++#endif
++s32 level_clearcolour;
++#ifndef PORT
++static
++#endif
++s32 level_fogcolour;
+ s32 GLASSPLAYER;
+ s32 BLUR;
+ s32 NODEBRIS;
+@@ -1460,6 +1516,9 @@ int main(s32 argc,char **argv) {
+   NuRndrInitEx(0x200000);
+   NuLightInit();
+   pNuCam = NuCameraCreate();
++#ifdef PORT
++  if (!port_skip_logos())
++#endif
+   firstscreens();
+   Pad[0] = NuPs2OpenPad(0,0);
+   Pad[1] = NuPs2OpenPad(1,0);
+@@ -1483,6 +1542,9 @@ LAB_80051ba4:
+     NewMenu(&Cursor,-1,-1,-1);
+     Demo = 0;
+     cutmovie = 0;
++#ifdef PORT
++    if (port_skip_intro()) cutmovie = -1; /* title/intro cut movie not ported yet */
++#endif
+     Level = 0x25;
+   }
+   SetLevel();
+@@ -1953,7 +2015,7 @@ LAB_80051ba4:
+           if ((LDATA->flags & 1) != 0) {
+             if (((((plr->used != 0) && (plr->obj.mask != NULL)) &&
+                  (plr->obj.mask->active != 0)) && ((LDATA->flags & 0xe00) == 0)) &&
+-               (((VEHICLECONTROL != 1 || ((LBIT & 0x0000000105042000) == 0)) &&
++               (((VEHICLECONTROL != 1 || ((PORT_W64(LBIT) & 0x0000000105042000) == 0)) &&
+                 ((Cursor.menu != 0x24 && (advice_wait == 0)))))) {
+               DrawMask(plr->obj.mask);
+             }
+@@ -1997,7 +2059,7 @@ LAB_80051ba4:
+         tbslotEnd(app_tbset,0xe);
+         tbslotBegin(app_tbset,2);
+         NuRndrBeginScene(1);
+-        if ((((LBIT & 0x200000a1) != 0) && (cut_on != 0)) ||
++        if ((((PORT_W64(LBIT) & 0x200000a1) != 0) && (cut_on != 0)) ||
+            ((Level == 7) && (player->obj.RPos.iALONG > 0x66) && (player->obj.RPos.iALONG < 0x92)))
+         {
+           if ((Level == 5) && (player->obj.RPos.iALONG > 0x6d) && (player->obj.RPos.iALONG < 0x79))
+@@ -2051,7 +2113,7 @@ LAB_80051ba4:
+         }
+         if ((((((LDATA->flags & 1) != 0) && (plr->used != 0)) && ((plr->obj.mask != NULL &&
+               ((plr->obj.mask->active != 0 && ((LDATA->flags & 0xe00) == 0)))))) &&
+-            ((VEHICLECONTROL != 1 || ((LBIT & 0x0000000105042000) == 0)))) &&
++            ((VEHICLECONTROL != 1 || ((PORT_W64(LBIT) & 0x0000000105042000) == 0)))) &&
+            ((Cursor.menu == 0x24 || (advice_wait != 0)))) {
+           DrawMask(plr->obj.mask);
+         }
+diff --git a/src/gamecode/main.h b/src/gamecode/main.h
+index 76ac1d1..7ed51f8 100644
+--- a/src/gamecode/main.h
++++ b/src/gamecode/main.h
+@@ -529,7 +529,13 @@ struct nulnkhdr_s
+     struct nulnkhdr_s* succ; // Offset: 0x4, DWARF: 0x14653C
+     struct nulnkhdr_s* prev; // Offset: 0x8, DWARF: 0x146568
+     unsigned short id; // Offset: 0xC, DWARF: 0x146594
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++    unsigned short : 15; /* PORT: pad so the value matches the big-endian bit positions */
+     unsigned short used : 1; // Offset: 0xE, DWARF: 0x1465B9, Bit Offset: 0, Bit Size: 1
++#else
++    unsigned short used : 1; // Offset: 0xE, DWARF: 0x1465B9, Bit Offset: 0, Bit Size: 1
++#endif
+ };
+ 
+ // Size: 0x10, DWARF: 0x1463F8
+diff --git a/src/gamecode/move.c b/src/gamecode/move.c
+index 6028f0e..9db1b58 100644
+--- a/src/gamecode/move.c
++++ b/src/gamecode/move.c
+@@ -51,9 +51,17 @@ struct chase_s {
+   float fALONG;
+ };
+ 
++#ifdef PORT /* full layout (16 bytes): GDeb[] is indexed here */
++struct gdeb_s {
++    s32 i;
++    char *name;
++    u64 levbits;
++};
++#else
+ struct gdeb_s {
+   s32 i;
+ };
++#endif
+ 
+ struct tersurface_s {
+   f32 friction;
+@@ -1034,7 +1042,7 @@ void CheckGates(struct obj_s* obj) {
+     if ((TimeTrial == 0) && (SplTab[28].spl != NULL)) {
+         spl = SplTab[28].spl;
+         for (i = 0, j = 1; i < GATECOUNT; i++, j += 2) {
+-            if ((gate_bits & (1 << i)) == 0) {
++            if ((PORT_W64(gate_bits) & (1 << i)) == 0) {
+                 p0 = (struct nuvec_s*)(spl->pts + ((j * 1) * spl->ptsize));
+                 p1 = (struct nuvec_s*)(spl->pts + ((i * 2) * spl->ptsize));
+                 
+@@ -1045,7 +1053,7 @@ void CheckGates(struct obj_s* obj) {
+                 }
+                 if (iVar4 == 2) {
+                     sfx = 0x36;
+-                    gate_bits |= 1 << i;
++                    gate_bits |= PORT_W64((u64)(1 << i));
+                     plr_gates++;
+                     if (plr_gates == GATECOUNT) {
+                         if ((Level == 5) && ((Game.level[0].flags & 0x20) == 0)) {
+diff --git a/src/gamecode/panel.c b/src/gamecode/panel.c
+index 8fe2b74..478d621 100644
+--- a/src/gamecode/panel.c
++++ b/src/gamecode/panel.c
+@@ -167,7 +167,14 @@ extern struct plritem_s plr_crates;
+ extern struct plritem_s plr_crystal;
+ extern struct plritem_s plr_crategem;
+ extern struct plritem_s plr_bonus_wumpas;
++#ifdef PORT
++/* 8 bytes in the DOL, written by game_obj.c with the plritem_s layout
++ * (item is the u8 at +7); plrbonus_s here read item from +0, so the HUD
++ * always showed the plain bonus gem instead of the colour picked up. */
++extern struct plritem_s plr_bonusgem;
++#else
+ extern struct plrbonus_s plr_bonusgem;
++#endif
+ 
+ extern s32 new_mode;
+ extern s32 new_level;
+@@ -195,9 +202,21 @@ extern s32 DESTRUCTIBLEBONUSCRATECOUNT;
+ extern s32 mask_crates;
+ extern s32 bonus_finish_frame;
+ extern s32 save_bonus_crates_destroyed;
++#ifdef PORT
++/* a byte in the game (dtk symbols): a wider C type made the translated
++ * code address the wrong byte of it (little-endian layout) */
++extern u8 bonus_wumpa_delay;
++#else
+ extern s32 bonus_wumpa_delay;
++#endif
+ extern f32 bonus_wumpa_wait;
++#ifdef PORT
++/* a byte in the game (dtk symbols): a wider C type made the translated
++ * code address the wrong byte of it (little-endian layout) */
++extern u8 bonus_life_delay;
++#else
+ extern s32 bonus_life_delay;
++#endif
+ extern f32 bonus_lives_wait;
+ extern f32 bonus_crates_wait;
+ extern f32 bonus_panel_wait;
+@@ -876,7 +895,11 @@ void UpdatePanelDebris(void) {
+                     case 0:
+                         (deb->pos).x = ((WUMPAOBJSX - BONUSWUMPAOBJSX) * 0.9f) * tmul + BONUSWUMPAOBJSX;
+                         (deb->pos).y = ((PANELSY - BONUSPANELSY) * 0.9f) * tmul + BONUSPANELSY;
++#ifdef PORT /* via s32 like the PPC: ARM saturates a negative float to 0 for u16 */
++                        deb->xrot = (s32)(tmul * -5529.5996f);
++#else
+                         deb->xrot = (tmul * -5529.5996f);
++#endif
+                         deb->yrot = -(((GameTimer.frame % 40) * 0x10000) / 40);
+                         deb->scale = tmul * 0.075f + 0.125f;
+                         break;
+@@ -906,7 +929,11 @@ void UpdatePanelDebris(void) {
+                             if ((deb->type == 2) || (deb->type == 5)) {
+                                 deb->xrot = panel_head_xrot - 0x1000;
+                             } else {
++#ifdef PORT /* via s32 like the PPC: ARM saturates a negative float to 0 for u16 */
++                                deb->xrot = (s32)(panel_head_xrot - (tmul * 4096.0f));
++#else
+                                 deb->xrot = panel_head_xrot - (tmul * 4096.0f);
++#endif
+                             }
+                         }
+                         if (deb->time < 0.25f) {
+@@ -1089,8 +1116,13 @@ void DrawPanel(void) {
+     
+     plr = (PLAYERCOUNT != 0) ? player : NULL;
+     
++#ifdef PORT /* via s32 like the PPC: ARM saturates a negative float to 0 for u16 */
++    WibbleYRot = (u16)(s32)(NuTrigTable[(((GlobalTimer.frame % 300) * 0x10000) / 0x4b) / 4 & 0xffff] * 2731.0f + 1820.0f);
++    WibbleXRot = (u16)(s32)(NuTrigTable[(((GlobalTimer.frame % 0xf0) * 0x10000) / 0xf0 + 0x4000) & 0xffff] * 2731.0f);
++#else
+     WibbleYRot = (u16)(NuTrigTable[(((GlobalTimer.frame % 300) * 0x10000) / 0x4b) / 4 & 0xffff] * 2731.0f + 1820.0f);
+     WibbleXRot = (u16)(NuTrigTable[(((GlobalTimer.frame % 0xf0) * 0x10000) / 0xf0 + 0x4000) & 0xffff] * 2731.0f);
++#endif
+     
+     PANEL3DMULX = (float)SWIDTH / (DIVPANEL3DX * ((float)SWIDTH / PHYSICAL_SCREEN_X));
+     PANEL3DMULY = ((float)SHEIGHT) / (DIVPANEL3DY * (((float)SHEIGHT) / (PHYSICAL_SCREEN_Y)));
+diff --git a/src/gamecode/vehicle.c b/src/gamecode/vehicle.c
+index 468bee0..c7f970f 100644
+--- a/src/gamecode/vehicle.c
++++ b/src/gamecode/vehicle.c
+@@ -2,6 +2,16 @@
+ #include <stddef.h>
+ #include <string.h>
+ 
++#ifdef PORT
++/* Forward declarations: on PowerPC the original implicit calls worked because
++ * int and float arguments travel in separate register files. */
++static s32 SafeFromCollisions(struct nuvec_s *Pos);
++s32 CollideGliderBullets(struct nuvec_s *Pos, float Radius, s32 Enemy, float DamageMul, s32 a4, s32 a5);
++s32 CollideWithBattleShips(struct nuvec_s *ObjPos, float Rad);
++struct nuvec_s *GetWeatherBossPos(void);
++struct CrateCube_s *HitCrateBalloons(struct nuvec_s *pos, float radius);
++#endif
++
+ struct nuquat_s { float x, y, z, w; };
+ 
+ /* ---- function declarations ---- */
+@@ -132,15 +142,43 @@ struct objtab_s {
+     u64 levbits;
+ };
+ 
++#ifdef PORT /* full layout (16 bytes): GDeb[] is indexed here */
+ struct gdeb_s {
+     s32 i;
++    char *name;
++    u64 levbits;
+ };
+-
++#else
++struct gdeb_s {
++    s32 i;
++};
++#endif
++
++/* Some uses below index GDeb[] in 4-byte units of the stub struct (byte
++ * offset / 4); with the real 16-byte layout they are converted back to an
++ * element index (checked against the GDeb+0x... offsets in the asm). */
++#ifdef PORT
++#define GDEB_X4(x) ((x) / 4)
++#else
++#define GDEB_X4(x) (x)
++#endif
++
++#ifdef PORT /* layout from game.c / panel.c (8 bytes in the DOL) */
++struct plritem_s {
++    s16 count;
++    s16 draw;
++    s8 frame;
++    s8 wait;
++    u8 delay;
++    u8 item;
++};
++#else
+ struct plritem_s {
+     s32 draw;
+     s32 count;
+     s32 frame;
+ };
++#endif
+ 
+ typedef struct GLIDERSTRUCT GLIDERSTRUCT;
+ struct GLIDERSTRUCT {
+@@ -627,7 +665,11 @@ void ProcessEarthBossActions(struct ATLASSTRUCT *EarthBoss);
+ /* ---- vehicle.c globals ---- */
+ 
+ GLIDERBOMBSTRUCT GliderBombs[10];
++#ifdef PORT /* 0x7F8 bytes in the DOL (30 entries); InitGliderBombs clears all of them */
++GLIDERBOMBSTRUCT EnemyGliderBombs[30];
++#else
+ GLIDERBOMBSTRUCT EnemyGliderBombs[0x1c];
++#endif
+ struct ATLASSTRUCT EarthBoss;
+ struct ATLASSTRUCT PlayerAtlas;
+ SATELLITESTRUCT SatelliteList[9];
+@@ -640,9 +682,27 @@ GUNBOATSTRUCT GunBoatList[4];
+ BOSSSTRUCT WeatherBoss;
+ ASTEROIDSTRUCT AsteroidList[100];
+ s32 AsteroidDebug;
++#ifdef PORT
++/* The DOL reaches JeepRock relative to BoltList (BoltList+0x12F8 + index*0x3D4,
++ * rock atlas types start at 3): keep the GameCube distance between them
++ * (0x80352CF0 - 0x80350E7C), or the earth boss rocks get garbage types and
++ * never turn to fire/ice. */
++struct port_boltrock_s {
++    WBBOLT bolt[0x78];
++    char gap[0x1E74 - sizeof(WBBOLT) * 0x78];
++    struct JEEPROCK rock[6];
++};
++struct port_boltrock_s port_boltrock __attribute__((aligned(32), nocommon));
++__asm__(".globl BoltList\n.set BoltList, port_boltrock\n"
++        ".globl JeepRock\n.set JeepRock, port_boltrock + 0x1E74\n");
++extern WBBOLT BoltList[0x78];
++extern struct JEEPROCK JeepRock[6];
++LIGHTENINGHAIL HailList[0x1e];
++#else
+ WBBOLT BoltList[0x78];
+ LIGHTENINGHAIL HailList[0x1e];
+ struct JEEPROCK JeepRock[6];
++#endif
+ PLANESTRUCT PlayerPlane;
+ TORNADOSTRUCT TornadoList[6];
+ struct numtx_s WeatherBossCamMtx;
+@@ -680,7 +740,11 @@ float RumbleCamTweenDest;
+ float RumbleCamTweenInterest;
+ float RumbleCamVal;
+ struct nuvec_s RumbleCamPos;
++#ifdef PORT
++s16 RumbleCamY; /* a short in the game: the translated RumbleCam reads it as one */
++#else
+ s32 RumbleCamY;
++#endif
+ s32 ResetAtlasCamera;
+ float AngleY_836;
+ float AtlasWhackValue;
+@@ -991,7 +1055,10 @@ s32 jonfirst = 0;
+ struct VEHMASK VehicleMask[2];
+ ZOFFASTRUCT EnemyZoffa[4];
+ HOVASTRUCT HovaBlimp[6];
+-static struct nuvec_s GliderAutoPosition;
++#ifndef PORT
++static
++#endif
++struct nuvec_s GliderAutoPosition;
+ s32 WBIntroOn;
+ float FireFlyIntroTween;
+ s32 FlyingLevelExtro;
+@@ -1008,18 +1075,32 @@ struct nuvec_s WeatherBossTargetPos;
+ void VehicleSetup(void) { JeepInControl = 0; }
+ 
+ // NGC MATCH
++#ifdef PORT
++/* the original passes Cre/Pad on in r3/r4 to both (the decomp calls them
++   without arguments, which only works on PowerPC) */
++void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad);
++void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad);
++#endif
+ void MoveVehicle(struct creature_s *Cre, struct nupad_s *Pad) {
+   switch (Cre->obj.vehicle) {
+   case 0x81:
+   case 0x8B:
+   case 0x36:
++#ifdef PORT
++    MoveGlider(Cre, Pad);
++#else
+     MoveGlider();
++#endif
+     return;
+   case 0x53:
+     MoveAtlas(Cre, Pad);
+     return;
+   case 0x63:
++#ifdef PORT
++    MovePlayerJeep(Cre, Pad);
++#else
+     MovePlayerJeep();
++#endif
+     return;
+   }
+ }
+@@ -2866,7 +2947,10 @@ static ZOFFASTRUCT *FindFreeZoffa(void) {
+ }
+ 
+ // NGC MATCH
+-static ZOFFASTRUCT *InitZoffa(ZOFFASTRUCT *Zoffa, ZOFFASTART *Start) {
++#ifndef PORT
++static
++#endif
++ZOFFASTRUCT *InitZoffa(ZOFFASTRUCT *Zoffa, ZOFFASTART *Start) {
+   s32 Indx;
+   s32 Id;
+ 
+@@ -3469,9 +3553,17 @@ update_pos:
+ 
+   Hova->Position.y = Hova->Velocity.y * (1.0f / 60.0f) + Hova->Position.y;
+ 
++  #ifdef PORT
++  CollideGliderBullets(&Hova->Position, HovaRad, 1, 1.0f / HovaY, 1, 1);
++#else
+   CollideGliderBullets(&Hova->Position, HovaRad, 1.0f / HovaY, 1, 1, 1);
++#endif
+ 
++#ifdef PORT
++  if (CollideGliderBullets(&Hova->Position, HovaRad, 0, 1.0f / HovaY, 1, 0) != 0) {
++#else
+   if (CollideGliderBullets(&Hova->Position, HovaRad, 1.0f / HovaY, 0, 1, 0) != 0) {
++#endif
+     Hova->HitPoints--;
+     if (Hova->HitPoints <= 0) {
+       Hova->Explode = 1;
+@@ -3540,9 +3632,9 @@ void DrawAllHovaBlimps(void) {
+       if (jonemit == 0 && Paused == 0) {
+         pos = TornadoList[i].Position;
+         pos.y -= 20.0f;
+-        AddVariableShotDebrisEffect(GDeb[0xb4].i, &pos, 1, 0, 0);
++        AddVariableShotDebrisEffect(GDeb[GDEB_X4(0xb4)].i, &pos, 1, 0, 0);
+         pos.y -= 3.0f;
+-        AddVariableShotDebrisEffect(GDeb[0xb8].i, &pos, 1, 0, 0);
++        AddVariableShotDebrisEffect(GDeb[GDEB_X4(0xb8)].i, &pos, 1, 0, 0);
+       }
+       pos = TornadoList[i].Position;
+       dist = pos.z - player->obj.pos.z;
+@@ -3552,10 +3644,10 @@ void DrawAllHovaBlimps(void) {
+         torndist = dist;
+       }
+       if (jontorn[i * 2] == -1) {
+-        AddDebrisEffect(&jontorn[i * 2], GDeb[0x1a8].i, pos.x, pos.y + jtemp1, pos.z);
++        AddDebrisEffect(&jontorn[i * 2], GDeb[GDEB_X4(0x1a8)].i, pos.x, pos.y + jtemp1, pos.z);
+       }
+       if (jontorn[i * 2 + 1] == -1) {
+-        AddDebrisEffect(&jontorn[i * 2 + 1], GDeb[0x1ac].i, pos.x, pos.y + jtemp1, pos.z);
++        AddDebrisEffect(&jontorn[i * 2 + 1], GDeb[GDEB_X4(0x1ac)].i, pos.x, pos.y + jtemp1, pos.z);
+       }
+     } else {
+       if (jontorn[i * 2] != -1) {
+@@ -4353,7 +4445,7 @@ static void ProcessGliderBullets(void) {
+     if (Level == 0x1a) {
+         EffectId = -1;
+     } else {
+-        EffectId = GDeb[0xB0].i;
++        EffectId = GDeb[GDEB_X4(0xB0)].i;
+     }
+ 
+     for (loop = 0; loop <= 1; loop++) {
+@@ -4667,7 +4759,11 @@ void GliderCam(struct cammtx_s *CamMtx) {
+     NuVecRotateX(&Ideal, &Ideal, (s32)(f31 * f30));
+ 
+     if (FlyingLevelExtro != 0) {
++#ifdef PORT /* args recovered from the DOL: 120.0, 0.3, 1/60 */
++      SeekAngLimHalfLife360f(&ExtroAngOff, ExtroTargAng, 120.0f, 0.3f, 0.016666668f);
++#else
+       SeekAngLimHalfLife360f(&ExtroAngOff, ExtroTargAng, 0.01666667f, 60.0f);
++#endif
+       dist = NuFabs(ExtroAngOff);
+       NuVecScale(1.0f - dist / 90.0f, &TempCam, &Ideal);
+       dist = NuFabs(ExtroAngOff);
+@@ -5934,7 +6030,11 @@ void ProcessBigGun(BIGGUNSTRUCT *BigGun) {
+     {
+       float angFloat;
+       angFloat = (float)(s32)(u16)angY;
++#ifdef PORT /* DOL passes a local angle with +/-FireAngDeviationY limits */
++      LimitAng360f(&angFloat, -BigGun->FireAngDeviationY, BigGun->FireAngDeviationY);
++#else
+       LimitAng360f(&BigGun->FireAngMinX);
++#endif
+       f28 = angFloat / f29;
+     }
+ 
+@@ -5948,7 +6048,14 @@ void ProcessBigGun(BIGGUNSTRUCT *BigGun) {
+       s32 angXi;
+       angXi = (s32)NuAtan2D(RotResult.y * -1.0f, RotResult.z * f31);
+       angXi ^= 0x8000;
++#ifdef PORT /* TODO(vehicle): result use not recovered; DOL limits a local by FireAngMinX/MaxX */
++      {
++        float angXf = (float)(s32)(u16)angXi;
++        LimitAng360f(&angXf, BigGun->FireAngMinX, BigGun->FireAngMaxX);
++      }
++#else
+       LimitAng360f(&BigGun->FireAngMaxX);
++#endif
+     }
+ 
+     {
+@@ -7625,6 +7732,31 @@ s32 GetCurrentWeatherBossObjectives(void) {
+ }
+ 
+ // NGC MATCH
++#ifdef PORT
++/* Fire boss (level 22): the player waits beside the wall of fire while the
++ * boss is introduced (FireBossHoldPlayer). The wall's kill test passes only
++ * when the player is within 0.5 of its plane, and the start position is 0.54
++ * away; the player slid ~0.01 on the slope during the wait and died the
++ * moment the chase started. Keep x/z where the wait began. */
++extern s32 FireBossHoldPlayer;
++static void port_fireboss_hold(void) {
++  static s32 held;
++  static f32 hx, hz;
++  if ((player == NULL) || (FireBossHoldPlayer == 0) || (player->obj.dead != 0)) {
++    held = 0;
++    return;
++  }
++  if (held == 0) {
++    held = 1;
++    hx = player->obj.pos.x;
++    hz = player->obj.pos.z;
++  }
++  player->obj.pos.x = player->obj.oldpos.x = hx;
++  player->obj.pos.z = player->obj.oldpos.z = hz;
++  player->obj.mom.x = player->obj.mom.z = 0.0f;
++}
++#endif
++
+ void ProcessVehicleLevel(struct nupad_s *Pad) {
+   switch (Level) {
+   case 13:
+@@ -7649,6 +7781,9 @@ void ProcessVehicleLevel(struct nupad_s *Pad) {
+     ProcessEarthBossLevel(Pad);
+     break;
+   case 22:
++#ifdef PORT
++    port_fireboss_hold();
++#endif
+     ProcessFireBossLevel(Pad);
+     break;
+   }
+diff --git a/src/gamecode/visidat.c b/src/gamecode/visidat.c
+index b54c805..1582ce5 100644
+--- a/src/gamecode/visidat.c
++++ b/src/gamecode/visidat.c
+@@ -116,6 +116,27 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
+ 
+     vd = 0;
+     fdatabase.voidptr = NuFileLoad(fname);
++#ifdef PORT
++    if (fdatabase.voidptr != 0) {
++        /* .vis is big-endian: [ver][numbnd if ver<0] {splen, vec3[splen]}*numbnd
++         * numassoc, assoc[4 x s32]*numassoc, [u32 nnames, names...] */
++        s32 *q = fdatabase.s32;
++        s32 k, nb, na;
++        port_swap32(q, 1);
++        nb = *q++;
++        if (nb < 0) { port_swap32(q, 1); nb = *q++; }
++        for (k = 0; k < nb; k++) {
++            port_swap32(q, 1);
++            port_swap32(q + 1, *q * 3);
++            q += 1 + *q * 3;
++        }
++        port_swap32(q, 1);
++        na = *q++;
++        port_swap32(q, na * 4);
++        q += na * 4;
++        if (fdatabase.s32[0] < 0) port_swap32(q, 1);
++    }
++#endif
+     if (fdatabase.voidptr != 0) {
+         fdata.s32 = fdatabase.s32 + 1;
+         vd = buff->voidptr;
+@@ -219,11 +240,19 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
+                     continue;
+                 }
+                 if (spline_used == 0) {
++#ifdef PORT
++                    if ((vd->sc->splines[o].len + 1) * binfosize > tmpsize) {
++#else
+                     if (vd->sc->splines[o].len * binfosize > tmpsize) {
++#endif
+                         if (tmpdelta != 0) {
+                             NuMemFree(tmpdelta);
+                         }
++#ifdef PORT /* the loop below writes row [len] too (visend_ix is clamped to len, inclusive) */
++                        tmpsize = (vd->sc->splines[o].len + 1) * binfosize;
++#else
+                         tmpsize = vd->sc->splines[o].len * binfosize + 1;
++#endif
+                         tmpdelta = NuMemAlloc(tmpsize * 8);
+                         if (tmpdelta == 0) {
+                             NuErrorProlog("C:/source/crashwoc/code/gamecode/visidat.c", 0x10D)("unable to alloc %d bytes", tmpsize * 8);
+diff --git a/src/gamelib/debris.c b/src/gamelib/debris.c
+index dc1b248..bd44245 100644
+--- a/src/gamelib/debris.c
++++ b/src/gamelib/debris.c
+@@ -104,8 +104,13 @@ struct uv1deb* GenDebIndex(struct debkeydatatype_s* current_deb_key, struct debi
+     deb->mx = emit.x;
+     deb->my = emit.y;
+     deb->mz = emit.z;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key[0].genptr != NULL) {
+         (current_deb_key[0].genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     deb->x = deb->x + current_deb_key->toffx;
+     deb->y = deb->y + current_deb_key->toffy;
+@@ -148,8 +153,13 @@ inline struct uv1deb* GenDebIndexRadial(struct debkeydatatype_s* current_deb_key
+     deb->mx = emit.x;
+     deb->my = emit.y;
+     deb->mz = emit.z;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     deb->x = deb->x + current_deb_key->toffx;
+     deb->y = deb->y + current_deb_key->toffy;
+@@ -193,8 +203,13 @@ inline struct uv1deb* GenDebIndexRadialRotor(struct debkeydatatype_s* current_de
+     deb->mx = local_60.x;
+     deb->my = local_60.y;
+     deb->mz = local_60.z;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (*current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     deb->x = deb->x + current_deb_key->toffx;
+     deb->y = deb->y + current_deb_key->toffy;
+@@ -252,8 +267,13 @@ inline struct uv1deb* GenDebIndexSpheroid(struct debkeydatatype_s* current_deb_k
+     deb->mx = emit.x;
+     deb->my = emit.y;
+     deb->mz = emit.z;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     deb->x = deb->x + current_deb_key->toffx;
+     deb->y = deb->y + current_deb_key->toffy;
+@@ -319,8 +339,13 @@ inline struct uv1deb* GenDebIndexBounceY(struct debkeydatatype_s* current_deb_ke
+         
+     }
+     
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     current_deb_key->pointer++;
+     deb->x = deb->x + current_deb_key->toffx;
+@@ -398,8 +423,13 @@ inline struct uv1deb* GenDebIndexBounceXZ(struct debkeydatatype_s* current_deb_k
+         );
+         freechunkcontrolsptr++;
+     }
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     current_deb_key->pointer++;
+     deb->x = deb->x + current_deb_key->toffx;
+@@ -429,8 +459,13 @@ GenDebIndexPos(struct debkeydatatype_s* current_deb_key, struct debinftype* debi
+     deb->mx = (float)randy() * debinfo->rvx + debinfo->ovx;
+     deb->my = (float)randy() * debinfo->rvy + debinfo->ovy;
+     deb->mz = (float)randy() * debinfo->rvz + debinfo->ovz;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     if (debinfo->DmaDebTypePointer == NULL) {
+         GenericDebinfoDmaTypeUpdate(debinfo);
+@@ -462,8 +497,13 @@ GenDebIndexPosRandTime(struct debkeydatatype_s* current_deb_key, struct debinfty
+     deb->mx = (float)randy() * debinfo->rvx + debinfo->ovx;
+     deb->my = (float)randy() * debinfo->rvy + debinfo->ovy;
+     deb->mz = (float)randy() * debinfo->rvz + debinfo->ovz;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     if (debinfo->DmaDebTypePointer == NULL) {
+         GenericDebinfoDmaTypeUpdate(debinfo);
+@@ -491,8 +531,13 @@ inline struct uv1deb* GenDebIndexWaterFall(struct debkeydatatype_s* current_deb_
+     deb->mz = deb->z * 1.5f + dist * NuTrigTable[46384];
+     deb->y = (float)randy() * debinfo->rsy + debinfo->osy;
+     deb->my = (float)randy() * debinfo->rvy + debinfo->ovy;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     if (debinfo->DmaDebTypePointer == NULL) {
+         GenericDebinfoDmaTypeUpdate(debinfo);
+@@ -519,8 +564,13 @@ inline struct uv1deb* GenDebIndexWaterFallSplash(struct debkeydatatype_s* curren
+     deb->mz = deb->z * 2;
+     deb->y = (randy()* debinfo->rsy) + debinfo->osy;
+     deb->my = (randy() * debinfo->rvy) + debinfo->ovy;
++#ifdef PORT /* the DOL calls the gencode callback (0x4ac) here, not genptr */
++    if (current_deb_key->gencode != NULL) {
++        ((struct uv1deb*(*)())current_deb_key->gencode)(current_deb_key, debinfo, deb);
++#else
+     if (current_deb_key->genptr != NULL) {
+         (current_deb_key->genptr)(current_deb_key, debinfo, deb);
++#endif
+     }
+     if (debinfo->DmaDebTypePointer == NULL) {
+         GenericDebinfoDmaTypeUpdate(debinfo);
+@@ -1230,7 +1280,9 @@ void AddVariableShotDebrisEffectMtx2(s32 type,struct nuvec_s *pos,s32 numdeb,str
+         }
+     }
+         if (dkey->disposed == dkey->count) {
++#ifndef PORT /* reads with an uninitialised index; harmless on the console */
+             checkingnow = debris_chunk_control_stack[j];
++#endif
+             for (j = 0; j < 0x20; j++) {
+                 for (checkingnow = debris_chunk_control_stack[j]; checkingnow != NULL; checkingnow = checkingnow->next) {
+                     if (checkingnow->chunk == (struct uv1deb*)dkey->chunks[dkey->disposed - 1]) {
+diff --git a/src/gamelib/edanim.c b/src/gamelib/edanim.c
+index f039685..8fc59ca 100644
+--- a/src/gamelib/edanim.c
++++ b/src/gamelib/edanim.c
+@@ -376,6 +376,9 @@ s32 edanimFileLoad(char *file) {
+               AnimParams[i].particle_rate[j] = EdFileReadInt();
+               AnimParams[i].particle_switch[j] = EdFileReadInt();
+               EdFileRead(&AnimParams[i].particle_offset[j],0xc);
++#ifdef PORT
++              port_swap32(&AnimParams[i].particle_offset[j], (0xc) / 4);
++#endif
+               if (version > 2) {
+                 AnimParams[i].particle_emitrotz[j] = EdFileReadShort();
+                 AnimParams[i].particle_emitroty[j] = EdFileReadShort();
+@@ -390,6 +393,9 @@ s32 edanimFileLoad(char *file) {
+               EdFileReadInt();
+               EdFileReadInt();
+               EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++              port_swap32(&dummyvec, (0xc) / 4);
++#endif
+               if (2 < version) {
+                 EdFileReadShort();
+                 EdFileReadShort();
+@@ -408,12 +414,18 @@ s32 edanimFileLoad(char *file) {
+                 AnimParams[i].sound_type[j] = EdFileReadInt();
+                 AnimParams[i].sound_time[j] = EdFileReadFloat();
+                 EdFileRead(&AnimParams[i].sound_offset[j],0xc);
++#ifdef PORT
++                port_swap32(&AnimParams[i].sound_offset[j], (0xc) / 4);
++#endif
+             }
+             for(j = 0; j < dummyreads; j++) {
+                 EdFileRead(dummyname,0x10);
+                 EdFileReadInt();
+                 EdFileReadFloat();
+                 EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++                port_swap32(&dummyvec, (0xc) / 4);
++#endif
+             }
+           }
+           AnimParams[i].terrplatid = FindPlatInst(edanimLookupInstanceIndex(AnimParams[i].objid));
+diff --git a/src/gamelib/edfile.c b/src/gamelib/edfile.c
+index 91fe179..c47f7f6 100644
+--- a/src/gamelib/edfile.c
++++ b/src/gamelib/edfile.c
+@@ -38,6 +38,9 @@ f32 EdFileReadFloat(void)
+ {
+ 	f32 tmp = 0.0f;
+ 	EdFileRead(&tmp, sizeof(f32));
++	#ifdef PORT
++	port_swap32(&tmp, 1);
++#endif
+ 	return tmp;
+ }
+ 
+@@ -45,6 +48,9 @@ s32 EdFileReadInt(void)
+ {
+ 	s32 tmp = 0;
+ 	EdFileRead(&tmp, sizeof(s32));
++	#ifdef PORT
++	port_swap32(&tmp, 1);
++#endif
+ 	return tmp;
+ }
+ 
+@@ -52,6 +58,9 @@ s16 EdFileReadShort(void)
+ {
+ 	s16 tmp = 0;
+ 	EdFileRead(&tmp, sizeof(s16));
++	#ifdef PORT
++	port_swap16(&tmp, 1);
++#endif
+ 	return tmp;
+ }
+ 
+diff --git a/src/gamelib/edgra.c b/src/gamelib/edgra.c
+index 8b8d4c9..48ff542 100644
+--- a/src/gamelib/edgra.c
++++ b/src/gamelib/edgra.c
+@@ -136,6 +136,9 @@ s32 edgraFileLoad(char *file) {
+             GrassClumps[i].num = 0;
+           }
+           EdFileRead(&GrassClumps[i].centre,0xc);
++#ifdef PORT
++          port_swap32(&GrassClumps[i].centre, (0xc) / 4);
++#endif
+           GrassClumps[i].radius = EdFileReadFloat();
+           GrassClumps[i].wind = EdFileReadFloat();
+           if (version > 1) {
+diff --git a/src/gamelib/edobj.c b/src/gamelib/edobj.c
+index 3a865f6..ca0204a 100644
+--- a/src/gamelib/edobj.c
++++ b/src/gamelib/edobj.c
+@@ -914,6 +914,9 @@ s32 edobjFileLoadObjects(char *file) {
+                     ObjectPath[i].particle_rate[j] = EdFileReadInt();
+                     ObjectPath[i].particle_switch[j] = EdFileReadInt();
+                     EdFileRead(&ObjectPath[i].particle_offset[j],0xc);
++#ifdef PORT
++                    port_swap32(&ObjectPath[i].particle_offset[j], (0xc) / 4);
++#endif
+                     if (version > 0xc) {
+                       ObjectPath[i].particle_emitrotz[j] = EdFileReadShort();
+                       ObjectPath[i].particle_emitroty[j] = EdFileReadShort();
+@@ -928,6 +931,9 @@ s32 edobjFileLoadObjects(char *file) {
+                     EdFileReadInt();
+                     EdFileReadInt();
+                     EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++                    port_swap32(&dummyvec, (0xc) / 4);
++#endif
+                     if (version > 0xc) {
+                       EdFileReadShort();
+                       EdFileReadShort();
+@@ -957,9 +963,15 @@ s32 edobjFileLoadObjects(char *file) {
+           ObjectPath[i].usedtime = 0;
+           for(j = 0; j < ObjectPath[i].usedway; j++) {
+               EdFileRead(&ObjectPath[i].waypoint[j],0xc);
++#ifdef PORT
++              port_swap32(&ObjectPath[i].waypoint[j], (0xc) / 4);
++#endif
+               ObjectPath[i].waypoint_speed[j] = EdFileReadFloat();
+               if (version > 2) {
+                 EdFileRead(&ObjectPath[i].waypoint_rot[j],0xc);
++#ifdef PORT
++                port_swap32(&ObjectPath[i].waypoint_rot[j], (0xc) / 4);
++#endif
+               }
+               else {
+                 memset(&ObjectPath[i].waypoint_rot[j],0,0xc);
+@@ -979,9 +991,15 @@ s32 edobjFileLoadObjects(char *file) {
+           }
+           for(j = 0; j < dummyreads; j++) {
+               EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++              port_swap32(&dummyvec, (0xc) / 4);
++#endif
+               EdFileReadFloat();
+               if (2 < version) {
+                 EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++                port_swap32(&dummyvec, (0xc) / 4);
++#endif
+               }
+               if (3 < version) {
+                 EdFileReadInt();
+@@ -1000,12 +1018,18 @@ s32 edobjFileLoadObjects(char *file) {
+                 ObjectPath[i].sound_type[j] = EdFileReadInt();
+                 ObjectPath[i].sound_time[j] = EdFileReadFloat();
+                 EdFileRead(&ObjectPath[i].sound_offset[j],0xc);
++#ifdef PORT
++                port_swap32(&ObjectPath[i].sound_offset[j], (0xc) / 4);
++#endif
+             }
+             for(j = 0; j < dummyreads; j++) {
+                 EdFileRead(dummyname,0x10);
+                 EdFileReadInt();
+                 EdFileReadFloat();
+                 EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++                port_swap32(&dummyvec, (0xc) / 4);
++#endif
+             }
+           }
+           else if (version == 10) {
+@@ -1014,11 +1038,17 @@ s32 edobjFileLoadObjects(char *file) {
+                 ObjectPath[i].sound_type[j] = 1;
+                 ObjectPath[i].sound_time[j] = EdFileReadFloat();
+                 EdFileRead(&ObjectPath[i].sound_offset[j],0xc);
++#ifdef PORT
++                port_swap32(&ObjectPath[i].sound_offset[j], (0xc) / 4);
++#endif
+             }
+             for(j = 0; j < dummyreads; j++) {
+                 EdFileReadFloat();
+                 EdFileReadFloat();
+                 EdFileRead(&dummyvec,0xc);
++#ifdef PORT
++                port_swap32(&dummyvec, (0xc) / 4);
++#endif
+             }
+           }
+           if (version > 0xb) {
+diff --git a/src/gamelib/edptl.c b/src/gamelib/edptl.c
+index 17a3471..29a7d50 100644
+--- a/src/gamelib/edptl.c
++++ b/src/gamelib/edptl.c
+@@ -245,9 +245,21 @@ void FileLoadSingleEffectType(struct debinftype *effect,s32 version,char list) {
+   }
+   effect->emitmag = EdFileReadFloat();
+   EdFileRead(&effect->variable_emit,0xc);
++#ifdef PORT
++  port_swap32(&effect->variable_emit, (0xc) / 4);
++#endif
+   EdFileRead(&effect->variable_emit_ranscale,0xc);
++#ifdef PORT
++  port_swap32(&effect->variable_emit_ranscale, (0xc) / 4);
++#endif
+   EdFileRead(&effect->variable_start,0xc);
++#ifdef PORT
++  port_swap32(&effect->variable_start, (0xc) / 4);
++#endif
+   EdFileRead(&effect->variable_start_ranscale,0xc);
++#ifdef PORT
++  port_swap32(&effect->variable_start_ranscale, (0xc) / 4);
++#endif
+   effect->rsx = EdFileReadFloat();
+   effect->rsy = EdFileReadFloat();
+   effect->rsz = EdFileReadFloat();
+@@ -272,28 +284,49 @@ void FileLoadSingleEffectType(struct debinftype *effect,s32 version,char list) {
+   effect->jibyamp = EdFileReadFloat();
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->colslot[i],0x10);
++#ifdef PORT
++    port_swap32(&effect->colslot[i], (0x10) / 4);
++#endif
+   }
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->alpslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->alpslot[i], (8) / 4);
++#endif
+   }
+   effect->minsize = EdFileReadFloat();
+   effect->maxsize = EdFileReadFloat();
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->wslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->wslot[i], (8) / 4);
++#endif
+   }
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->hslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->hslot[i], (8) / 4);
++#endif
+   }
+   effect->minrot = EdFileReadFloat();
+   effect->maxrot = EdFileReadFloat();
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->rotslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->rotslot[i], (8) / 4);
++#endif
+   }
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->jibxslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->jibxslot[i], (8) / 4);
++#endif
+   }
+   for(i = 0; i < 8; i++) {
+     EdFileRead(&effect->jibyslot[i],8);
++#ifdef PORT
++    port_swap32(&effect->jibyslot[i], (8) / 4);
++#endif
+   }
+   effect->u1 = EdFileReadFloat();
+   effect->v1 = EdFileReadFloat();
+@@ -302,6 +335,9 @@ void FileLoadSingleEffectType(struct debinftype *effect,s32 version,char list) {
+   if (version > 2) {
+         for(i = 0; i < 8; i++) {
+           EdFileRead(&effect->sphereslot[i],8);
++#ifdef PORT
++          port_swap32(&effect->sphereslot[i], (8) / 4);
++#endif
+         }
+         effect->numspheres = EdFileReadChar();
+   }
+@@ -311,6 +347,16 @@ void FileLoadSingleEffectType(struct debinftype *effect,s32 version,char list) {
+   for(i = 0; i < 4; i++) {
+         if (version > 0xa) {
+           EdFileRead(&effect->sounds[i],0xc);
++#ifdef PORT
++          port_swap32(&effect->sounds[i], (0xc) / 4);
++          /* the translated DebrisDoSounds reads delay with lhz at +2 (the low half
++           * of the big-endian int); on little-endian that is the high half (0),
++           * so the sound restarted every frame (stacked, noisy loops in
++           * a\earth_r). Keep the value in both halves: the halfword view at +2
++           * is right, and nothing reads the int at run time. */
++          effect->sounds[i].delay = (s32)(((u32)effect->sounds[i].delay & 0xFFFFu) << 16 |
++                                          ((u32)effect->sounds[i].delay & 0xFFFFu));
++#endif
+         }
+         else {
+           effect->sounds[i].id = -1;
+@@ -384,6 +430,9 @@ s32 edppLoadEffects(char* file, char list) {
+ 
+             for (i = 0; i < maxptl; i++) {
+                 EdFileRead(&edpp_ptls[i].pos, sizeof(struct nuvec_s));
++#ifdef PORT
++                port_swap32(&edpp_ptls[i].pos, (sizeof(struct nuvec_s)) / 4);
++#endif
+                 edpp_ptls[i].type = EdFileReadInt();
+                 edpp_ptls[i].handle = EdFileReadInt();
+                 edpp_ptls[i].emitrotz = EdFileReadInt();
+@@ -405,6 +454,9 @@ s32 edppLoadEffects(char* file, char list) {
+             maxptl = numptls > 256 ? 256 : numptls;
+             for (i = 0; i < maxptl; i++) {
+                 EdFileRead(&edpp_ptls[i].pos, sizeof(struct nuvec_s));
++#ifdef PORT
++                port_swap32(&edpp_ptls[i].pos, (sizeof(struct nuvec_s)) / 4);
++#endif
+                 if (version < 7) {
+                     edpp_ptls[i].rotz = 0;
+                     edpp_ptls[i].roty = 0;
+diff --git a/src/gamelib/gcutscn.c b/src/gamelib/gcutscn.c
+index 2a08f7a..fdf4b38 100644
+--- a/src/gamelib/gcutscn.c
++++ b/src/gamelib/gcutscn.c
+@@ -4,6 +4,13 @@
+ #include <string.h>
+ 
+ #include "../numath/nuquat.h"
++#ifdef PORT
++/* float arguments: must be prototyped for ARM/x86 calling conventions */
++struct nuanimdata_s; struct nuanimdata2_s; struct nuanimtime_s;
++void NuAnimDataCalcTime(struct nuanimdata_s *animdata, float time, struct nuanimtime_s *atime);
++void NuAnimData2CalcTime(struct nuanimdata2_s *animdata, float time, struct nuanimtime_s *atime);
++#endif
++
+ 
+ extern const struct numtx_s numtx_identity;
+ extern s32 set_cutscenecammtx;
+@@ -20,14 +27,32 @@ NuCutScnCharacterRndr NuCutSceneCharacterRender;
+ NuCutScnFindCharacters NuCutSceneFindCharacters;
+ NuCutScnRigidCollisionCheckFn NuCutSceneRigidCollisionCheck;
+ 
+-static s32 do_cameras = 1;
+-static s32 do_rigids = 1;
+-static s32 do_chars = 1;
+-static s32 do_locator = 1;
++#ifndef PORT
++static
++#endif
++s32 do_cameras = 1;
++#ifndef PORT
++static
++#endif
++s32 do_rigids = 1;
++#ifndef PORT
++static
++#endif
++s32 do_chars = 1;
++#ifndef PORT
++static
++#endif
++s32 do_locator = 1;
+ 
+-static void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *icutscene, s32 paused);
++#ifndef PORT
++static
++#endif
++void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *icutscene, s32 paused);
+ static void instNuGCutSceneRender(struct instNUGCUTSCENE_s *icutscene);
+-static void instNuGCutSceneStart(struct instNUGCUTSCENE_s *icutscene);
++#ifndef PORT
++static
++#endif
++void instNuGCutSceneStart(struct instNUGCUTSCENE_s *icutscene);
+ static void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *icutscene);
+ static void NuGCutCamsSysFixPtrs(struct NUGCUTSCENE_s *cutscene, s32 address_offset);
+ static void NuGCutLocatorSysFixPtrs(struct NUGCUTSCENE_s *cutscene, s32 address_offset);
+@@ -35,11 +60,20 @@ static void NuGCutRigidSysFixPtrs(struct NUGCUTSCENE_s *cutscene, s32 address_of
+ static void NuGCutCharSysFixPtrs(struct NUGCUTSCENE_s *cutscene, s32 address_offset);
+ static void NuGCutTriggerSysFixPtrs(struct NUGCUTSCENE_s *cutscene, s32 address_offset);
+ static void instNuGCutSceneCalculateCentre(struct instNUGCUTSCENE_s *icutscene, struct numtx_s *mtx);
+-static void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *locatorsys);
+-static void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *cutscene, struct nugscn_s *scene);
++#ifndef PORT
++static
++#endif
++void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *locatorsys);
++#ifndef PORT
++static
++#endif
++void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *cutscene, struct nugscn_s *scene);
+ static void NuGCutCharSysFixUp(struct NUGCUTSCENE_s *cutscene);
+ static void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *cutscene, struct NUTRIGGERSYS_s *triggersys);
+-static void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s *locatorsys, struct instNUGCUTLOCATOR_s *ilocator, struct NUGCUTLOCATOR_s *locator, float current_frame, struct numtx_s *wm);
++#ifndef PORT
++static
++#endif
++void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s *locatorsys, struct instNUGCUTLOCATOR_s *ilocator, struct NUGCUTLOCATOR_s *locator, float current_frame, struct numtx_s *wm);
+ void instNuGCutLocatorUpdate(struct instNUGCUTSCENE_s *icutscene, struct NUGCUTLOCATORSYS_s *locatorsys, struct instNUGCUTLOCATOR_s *ilocator, struct NUGCUTLOCATOR_s *locator, float current_frame, struct numtx_s *wm);
+ struct instNUGCUTCAMSYS_s *instNuCGutCamSysCreate(struct NUGCUTCAMSYS_s *cameras, union variptr_u *buff);
+ void instNuGCutCamSysStart(struct instNUGCUTCAMSYS_s *icamsys, struct NUGCUTCAMSYS_s *camsys);
+@@ -48,13 +82,22 @@ static struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_
+ static struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *cutscene, union variptr_u *buff);
+ struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *cutscene, struct instNUTRIGGERSYS_s *itriggersys, union variptr_u *buff);
+ static void instNuGCutLocatorSysStart(struct instNUGCUTLOCATORSYS_s *ilocatorsys, struct NUGCUTLOCATORSYS_s *locatorsys);
+-static void instNuGCutRigidSysStart(struct instNUGCUTRIGIDSYS_s *irigidsys, struct NUGCUTRIGIDSYS_s *rigidsys);
++#ifndef PORT
++static
++#endif
++void instNuGCutRigidSysStart(struct instNUGCUTRIGIDSYS_s *irigidsys, struct NUGCUTRIGIDSYS_s *rigidsys);
+ void instNuGCutCharSysRender(struct instNUGCUTSCENE_s *icutscene, float current_frame);
+ void instNuGCutTriggerSysUpdate(struct instNUGCUTSCENE_s *icutscene, float current_frame);
+ static void instNuGCutTriggerSysStart(struct instNUGCUTSCENE_s *icutscene);
+-static int StateAnimEvaluate(struct NUSTATEANIM_s *stateanim, u8 *lastix, u8 *newstate, float frame);
++#ifndef PORT
++static
++#endif
++int StateAnimEvaluate(struct NUSTATEANIM_s *stateanim, u8 *lastix, u8 *newstate, float frame);
+ static struct NUSTATEANIM_s *StateAnimFixPtrs(struct NUSTATEANIM_s *sanim, s32 address_offset);
+-static void NuGCutRigidCalcMtx(struct NUGCUTRIGID_s *rigid, float current_frame, struct numtx_s *mtx);
++#ifndef PORT
++static
++#endif
++void NuGCutRigidCalcMtx(struct NUGCUTRIGID_s *rigid, float current_frame, struct numtx_s *mtx);
+ 
+ //#define ALIGN_ADDRESS(addr, al) (((u32)(addr) + ((u32)al - 1)) & ~((u32)al - 1))
+ #define ASSIGN_IF_SET(a, b) a = (a == NULL) ? NULL : b
+@@ -117,6 +160,181 @@ void NuGCutSceneSysRender(void)
+ }
+ 
+ 
++#ifdef PORT
++/* Byte-swap a .cut memory image (NUGCUTSCENE_s graph) in place, following the
++ * same pointers as the *FixPtrs functions below. Stored pointers are addresses
++ * in the original layout: 'delta' maps them into the buffer. Bit masks of the
++ * anim curves are read byte by byte and stay as they are. */
++#define PORT_CUT_PTR(v) ((v) ? (void *)((s32)(v) + delta) : NULL)
++#define PORT_S32(f) port_swap32(&(f), 1)
++#define PORT_S16(f) port_swap16(&(f), 1)
++
++static void port_swap_cut_stateanim(struct NUSTATEANIM_s *sa, s32 delta) {
++    if (sa == NULL || !port_visit_once(sa)) return;
++    port_swap32(sa, 3);
++    if (sa->frames != NULL && port_visit_once(PORT_CUT_PTR(sa->frames)))
++        port_swap32(PORT_CUT_PTR(sa->frames), sa->nchanges);
++}
++
++static int port_popcount32(const u8 *m) {
++    return __builtin_popcount(m[0]) + __builtin_popcount(m[1]) + __builtin_popcount(m[2]) + __builtin_popcount(m[3]);
++}
++
++static void port_swap_cut_animdata2(struct nuanimdata2_s *ad, s32 delta) {
++    s32 k, c, total;
++    struct nuanimcurve2_s *curves;
++    char *flags;
++    if (ad == NULL || !port_visit_once(ad)) return;
++    PORT_S32(ad->endframe);
++    PORT_S16(ad->nnodes);
++    PORT_S16(ad->ncurves);
++    PORT_S16(ad->nchunks);
++    PORT_S16(ad->pad);
++    PORT_S32(ad->curves);
++    PORT_S32(ad->curveflags);
++    PORT_S32(ad->curvesetflags);
++    if (ad->curves == NULL) return;
++    curves = PORT_CUT_PTR(ad->curves);
++    flags = PORT_CUT_PTR(ad->curveflags);
++    total = ad->nnodes * ad->ncurves;
++    if (!port_visit_once(curves)) return;
++    port_swap32(curves, total);
++    if (flags == NULL) return;
++    for (k = 0; k < total; k++) {
++        struct nuanimcurvedata_s *cd;
++        u8 *mask;
++        u16 *ixs;
++        s32 nkeys = 0;
++        if (flags[k] == 0 || curves[k].data.curvedata == NULL) continue;
++        cd = PORT_CUT_PTR(curves[k].data.curvedata);
++        if (!port_visit_once(cd)) continue;
++        port_swap32(cd, 3);
++        mask = PORT_CUT_PTR(cd->mask);
++        ixs = PORT_CUT_PTR(cd->key_ixs);
++        if (ixs != NULL && port_visit_once(ixs)) port_swap16(ixs, ad->nchunks);
++        if (mask == NULL || ixs == NULL || cd->key_array == NULL) continue;
++        for (c = 0; c < ad->nchunks; c++) {
++            s32 n = ixs[c] + port_popcount32(mask + c * 4);
++            if (n > nkeys) nkeys = n;
++        }
++        if (!port_visit_once(PORT_CUT_PTR(cd->key_array))) continue;
++        switch (flags[k]) {
++        case NUANIMKEYTYPE_BIG: port_swap32(PORT_CUT_PTR(cd->key_array), nkeys * 4); break;
++        case NUANIMKEYTYPE_INTEGER: port_swap32(PORT_CUT_PTR(cd->key_array), nkeys * 2); break;
++        case NUANIMKEYTYPE_SMALL: port_swap16(PORT_CUT_PTR(cd->key_array), nkeys * 2); break;
++        default: break;
++        }
++    }
++}
++
++static void port_swap_cut_locator(struct NUGCUTLOCATOR_s *loc, s32 delta) {
++    if (!port_visit_once(loc)) return;
++    port_swap32(&loc->mtx, 16);
++    port_swap32(&loc->pivot, 3);
++    PORT_S32(loc->rate);
++    PORT_S32(loc->anim);
++    PORT_S32(loc->direction);
++    PORT_S32(loc->param1);
++    PORT_S32(loc->param2);
++    port_swap_cut_animdata2(PORT_CUT_PTR(loc->anim), delta);
++}
++
++static void port_swap_cutscene_image(struct NUGCUTSCENE_s *cs) {
++    s32 delta, i;
++    port_swap32(cs, 10);
++    delta = (s32)cs - cs->address_offset;
++    port_visit_reset();
++    if (cs->bbox != NULL) port_swap32(PORT_CUT_PTR(cs->bbox), 6);
++    if (cs->cameras != NULL) {
++        struct NUGCUTCAMSYS_s *cam = PORT_CUT_PTR(cs->cameras);
++        PORT_S32(cam->ncutcams);
++        PORT_S32(cam->cutcams);
++        PORT_S32(cam->camanim);
++        PORT_S32(cam->camchanges);
++        if (cam->cutcams != NULL) {
++            struct NUGCUTCAM_s *cc = PORT_CUT_PTR(cam->cutcams);
++            for (i = 0; i < (s32)cam->ncutcams; i++) port_swap32(&cc[i].mtx, 16);
++        }
++        port_swap_cut_animdata2(PORT_CUT_PTR(cam->camanim), delta);
++        port_swap_cut_stateanim(PORT_CUT_PTR(cam->camchanges), delta);
++    }
++    if (cs->locators != NULL) {
++        struct NUGCUTLOCATORSYS_s *ls = PORT_CUT_PTR(cs->locators);
++        PORT_S32(ls->locators);
++        PORT_S32(ls->locator_types);
++        if (ls->locators != NULL) {
++            struct NUGCUTLOCATOR_s *l = PORT_CUT_PTR(ls->locators);
++            for (i = 0; i < ls->nlocators; i++) port_swap_cut_locator(&l[i], delta);
++        }
++        if (ls->locator_types != NULL) {
++            struct NUGCUTLOCATORTYPE_s *t = PORT_CUT_PTR(ls->locator_types);
++            for (i = 0; i < ls->ntypes; i++) {
++                PORT_S32(t[i].name);
++                PORT_S16(t[i].ix);
++            }
++        }
++    }
++    if (cs->rigids != NULL) {
++        struct NUGCUTRIGIDSYS_s *rs = PORT_CUT_PTR(cs->rigids);
++        PORT_S32(rs->rigids);
++        PORT_S16(rs->nrigids);
++        if (rs->rigids != NULL) {
++            struct NUGCUTRIGID_s *r = PORT_CUT_PTR(rs->rigids);
++            for (i = 0; i < rs->nrigids; i++) {
++                port_swap32(&r[i].mtx, 16);
++                PORT_S32(r[i].name);
++                PORT_S32(r[i].special.scene);
++                PORT_S32(r[i].special.special);
++                PORT_S32(r[i].anim);
++                PORT_S32(r[i].visibiltyanim);
++                PORT_S32(r[i].locators);
++                port_swap_cut_animdata2(PORT_CUT_PTR(r[i].anim), delta);
++                port_swap_cut_stateanim(PORT_CUT_PTR(r[i].visibiltyanim), delta);
++            }
++        }
++    }
++    if (cs->chars != NULL) {
++        struct NUGCUTCHARSYS_s *chs = PORT_CUT_PTR(cs->chars);
++        PORT_S32(chs->chars);
++        PORT_S16(chs->nchars);
++        if (chs->chars != NULL) {
++            struct NUGCUTCHAR_s *ch = PORT_CUT_PTR(chs->chars);
++            for (i = 0; i < chs->nchars; i++) {
++                port_swap32(&ch[i].mtx, 16);
++                PORT_S32(ch[i].name);
++                PORT_S32(ch[i].char_anim);
++                PORT_S32(ch[i].joint_anim);
++                PORT_S32(ch[i].face_anim);
++                PORT_S32(ch[i].character);
++                PORT_S32(ch[i].locators);
++                PORT_S32(ch[i].animrate);
++                port_swap_cut_animdata2(PORT_CUT_PTR(ch[i].char_anim), delta);
++                port_swap_cut_animdata2(PORT_CUT_PTR(ch[i].joint_anim), delta);
++                port_swap_cut_animdata2(PORT_CUT_PTR(ch[i].face_anim), delta);
++            }
++        }
++    }
++    if (cs->triggersys != NULL) {
++        struct NUGCUTTRIGGERSYS_s *ts = PORT_CUT_PTR(cs->triggersys);
++        PORT_S32(ts->ntriggers);
++        PORT_S32(ts->triggers);
++        if (ts->triggers != NULL) {
++            struct NUGCUTTRIGGER_s *t = PORT_CUT_PTR(ts->triggers);
++            for (i = 0; i < ts->ntriggers; i++) {
++                PORT_S16(t[i].ix);
++                PORT_S16(t[i].pad);
++                PORT_S32(t[i].triggername);
++                PORT_S32(t[i].enableflag1anim);
++                port_swap_cut_stateanim(PORT_CUT_PTR(t[i].enableflag1anim), delta);
++            }
++        }
++    }
++}
++#undef PORT_S16
++#undef PORT_S32
++#undef PORT_CUT_PTR
++#endif
++
+ //PS2
+ struct NUGCUTSCENE_s * NuGCutSceneLoad(char *fname,union variptr_u *buff,union variptr_u *endbuff)
+ {
+@@ -132,6 +350,9 @@ struct NUGCUTSCENE_s * NuGCutSceneLoad(char *fname,union variptr_u *buff,union v
+     
+     cutscene = (struct NUGCUTSCENE_s *)buff->voidptr;
+     buff->voidptr = (void *)((s32)&cutscene->version + fsize);
++#ifdef PORT
++    if (fsize != 0) port_swap_cutscene_image(cutscene);
++#endif
+     if (cutscene->version != 1) {
+         NuErrorProlog("..\\nu2.ps2\\gamelib\\gcutscn.c", 0x14e)
+             ("Out of date version of cutscene <%s>, you have version <%d>", fname, cutscene->version);
+@@ -211,7 +432,14 @@ struct instNUGCUTSCENE_s *instNuGCutSceneCreate (struct NUGCUTSCENE_s *cutscene,
+         active_cutscene_instances = icutscene;
+         icutscene->cutscene = cutscene;
+         if (name != NULL) {
++#ifdef PORT
++            /* names are up to 16 chars: the GameCube's terminator lands in mtx */
++            size_t n = strlen(name);
++            memcpy(icutscene->name, name, n < 16 ? n + 1 : 16);
++            if (n >= 16) ((char *)&icutscene->mtx)[0] = 0;
++#else
+             sprintf(icutscene->name, name);
++#endif
+         }
+         
+         if (cutscene->cameras != NULL) {
+@@ -263,7 +491,10 @@ void instNuGCutSceneDestroy(struct instNUGCUTSCENE_s *icutscene)
+ }
+ 
+ //PS2
+-static void instNuGCutSceneStart(struct instNUGCUTSCENE_s* icutscene)
++#ifndef PORT
++static
++#endif
++void instNuGCutSceneStart(struct instNUGCUTSCENE_s* icutscene)
+ {
+     icutscene->cframe = 1.0f;
+     
+@@ -541,7 +772,10 @@ static void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *icutscene, float cu
+ }
+ 
+ //PS2 MATCH
+-static void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *icutscene,s32 paused)
++#ifndef PORT
++static
++#endif
++void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *icutscene,s32 paused)
+ {
+     /*
+     NUGCUTSCENE_s* cutscene; //
+@@ -932,7 +1166,10 @@ static s32 LookupLocatorFn(char* name)
+ }
+ 
+ //PS2
+-static void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *locatorsys) 
++#ifndef PORT
++static
++#endif
++void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *locatorsys)
+ {
+   u32 i;
+   struct NUGCUTLOCATORTYPE_s *loctype;
+@@ -1009,7 +1246,10 @@ void CalculateLocatorDirection(enum locdir ldir, struct numtx_s* mtx, struct nuv
+ }
+ 
+ //NGC MATCH
+-static void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s* locatorsys, struct instNUGCUTLOCATOR_s* ilocator, struct NUGCUTLOCATOR_s* locator, float current_frame, struct numtx_s* wm) {
++#ifndef PORT
++static
++#endif
++void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s* locatorsys, struct instNUGCUTLOCATOR_s* ilocator, struct NUGCUTLOCATOR_s* locator, float current_frame, struct numtx_s* wm) {
+ 
+     struct numtx_s mtx;
+     float rate;
+@@ -1103,7 +1343,10 @@ static void NuGCutRigidSysFixPtrs(struct NUGCUTSCENE_s* cutscene, s32 address_of
+ }
+ 
+ //PS2
+-static void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *cutscene,struct nugscn_s *scene)
++#ifndef PORT
++static
++#endif
++void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *cutscene,struct nugscn_s *scene)
+ {
+     struct NUGCUTRIGIDSYS_s *rigidsys;
+     struct NUGCUTLOCATORSYS_s *locator;
+@@ -1187,7 +1430,10 @@ instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *cutscene,struct nugscn_s *gscene,
+ 
+ 
+ //PS2 Match
+-static void NuGCutRigidCalcMtx(struct NUGCUTRIGID_s* rigid, float current_frame, struct numtx_s* mtx) 
++#ifndef PORT
++static
++#endif
++void NuGCutRigidCalcMtx(struct NUGCUTRIGID_s* rigid, float current_frame, struct numtx_s* mtx)
+ {
+   struct nuanimcurve2_s *curves;
+   struct nuanimtime_s atime;
+@@ -1241,7 +1487,10 @@ static void NuGCutRigidCalcMtx(struct NUGCUTRIGID_s* rigid, float current_frame,
+ }
+ 
+ //PS2
+-static void instNuGCutRigidSysStart(struct instNUGCUTRIGIDSYS_s *irigidsys,struct NUGCUTRIGIDSYS_s *rigidsys)
++#ifndef PORT
++static
++#endif
++void instNuGCutRigidSysStart(struct instNUGCUTRIGIDSYS_s *irigidsys,struct NUGCUTRIGIDSYS_s *rigidsys)
+ {
+   u32 i;
+     
+@@ -1705,7 +1954,10 @@ static void instNuGCutTriggerSysStart(struct instNUGCUTSCENE_s *icutscene)
+ }
+ 
+ //PS2
+-static int StateAnimEvaluate(struct NUSTATEANIM_s* stateanim, u8* lastix, u8* newstate, float frame)
++#ifndef PORT
++static
++#endif
++int StateAnimEvaluate(struct NUSTATEANIM_s* stateanim, u8* lastix, u8* newstate, float frame)
+ {
+     s32 statechanged;
+     u8 ix;
+diff --git a/src/gamelib/gcutscn.h b/src/gamelib/gcutscn.h
+index 3654a0b..6b23cb7 100644
+--- a/src/gamelib/gcutscn.h
++++ b/src/gamelib/gcutscn.h
+@@ -113,7 +113,12 @@ struct instNUTRIGGERSYS_s {
+     struct NUTRIGGERSYS_s *triggersys;
+     struct instNUTRIGGER_s *itriggers;
+     void *scenemanager;
++#ifdef PORT
++    int : 31; /* PORT: big-endian bit positions (fields reversed) */
+     int is_disabled : 1;
++#else
++    int is_disabled : 1;
++#endif
+ };
+ 
+ struct instNUGCUTTRIGGERSYS_s {
+@@ -303,6 +308,19 @@ struct instNUGCUTSCENE_s {
+     struct NUGCUTSCENE_s *cutscene;
+     struct nuvec_s centre;
+     float maxdistsqr;
++#ifdef PORT
++    int : 22; /* PORT: big-endian bit positions (fields reversed) */
++    int been_updated_this_frame : 1;
++    int is_disabled : 1;
++    int is_visible : 1;
++    int checkmaxdist : 1;
++    int checkbboxclip : 1;
++    int has_mtx : 1;
++    int autostart : 1;
++    int looping : 1;
++    unsigned int is_playing : 1;
++    int played_first_frame : 1;
++#else
+     int played_first_frame : 1;
+     unsigned int is_playing : 1;
+     int looping : 1;
+@@ -313,6 +331,7 @@ struct instNUGCUTSCENE_s {
+     int is_visible : 1;
+     int is_disabled : 1;
+     int been_updated_this_frame : 1;
++#endif
+     float cframe;
+     float rate;
+     struct instNUGCUTCAMSYS_s *icameras;
+diff --git a/src/gamelib/glutils.c b/src/gamelib/glutils.c
+index c9b35a8..dbd513d 100644
+--- a/src/gamelib/glutils.c
++++ b/src/gamelib/glutils.c
+@@ -13,6 +13,11 @@ struct numtl_s * CreateAlphaBlendTexture256_32(char *fname,s32 uvmode,s32 alpha,
+   
+   balls = (char *)malloc_x(0x40000);
+   NuFileLoadBuffer(fname,balls,0x40000);
++#ifdef PORT
++  /* 32-bit ARGB pixels stored as big-endian words (GS_TexSwizzleRGB5A3
++     reads them as u32): particles and drop shadows */
++  port_swap32(balls, 0x40000 / 4);
++#endif
+   tex.type = NUTEX_RGBA32;
+   tex.bits = balls;
+   tex.width = 0x100;
+@@ -48,6 +53,11 @@ struct numtl_s * CreateAlphaBlendTexture64(char *fname,s32 uvmode,s32 alpha,s32
+   
+   balls = (char *)malloc_x(0x4000);
+   NuFileLoadBuffer(fname,balls,0x4000);
++#ifdef PORT
++  /* 32-bit ARGB pixels stored as big-endian words (GS_TexSwizzleRGB5A3
++     reads them as u32): particles and drop shadows */
++  port_swap32(balls, 0x4000 / 4);
++#endif
+   tex.type = NUTEX_RGBA32;
+   tex.bits = balls;
+   tex.width = 0x40;
+diff --git a/src/gamelib/nuwind.c b/src/gamelib/nuwind.c
+index a35a337..0847407 100644
+--- a/src/gamelib/nuwind.c
++++ b/src/gamelib/nuwind.c
+@@ -21,7 +21,12 @@ void NuWindInit(void) {
+ struct nuwindgrp_s* NuWindAllocateGrp(void) {
+   if (NuWindGCount < 0x40) {
+       NuWindGCount++;
++#ifdef PORT
++      /* the DOL indexes from ropemat+0x18 == &NuWindGroup[-1] (post-increment slot) */
++      return &NuWindGroup[NuWindGCount - 1];
++#else
+       return &NuWindGroup[NuWindGCount]; //(NuWindGCount * 0xa) + &ropemat._12
++#endif
+   }
+   return 0;
+ }
+diff --git a/src/gamelib/terrain.c b/src/gamelib/terrain.c
+index 8d3ee3b..6f3ba9e 100644
+--- a/src/gamelib/terrain.c
++++ b/src/gamelib/terrain.c
+@@ -45,6 +45,79 @@ static const unsigned long D3DDIRTYFROMTEXTURESTATE[22] = {
+ 
+ char* strcat(char* dest, const char* src);
+ 
++
++#ifdef PORT
++/* Convert a big-endian .ter image in place before ReadTerrain walks it.
++ * Layout: s32 offset (in shorts) to an OffFileType table; data blocks start
++ * right after that first word, each 'offset' shorts long:
++ *   type 0/1: model groups [s16 id][s16 n][4 floats bbox] + n tertype records
++ *             (24 floats + 4 info bytes), terminated by a negative id;
++ *   type 2:   wall spline: s32 marker, u16 count, u16 val, count nuvec_s;
++ *   type 3:   crash data (left untouched, unused by the game code). */
++static void port_swap_terrain(short *ts, s32 fsize) {
++    static const unsigned char rotflag[] = { 1 };
++    char *end = (char *)ts + fsize;
++    OffFileType *sp;
++    short *st;
++    s32 lp, cnt;
++    port_swap32(ts, 1);
++    sp = (OffFileType *)(ts + *(s32 *)ts);
++    port_swap32(&sp->count, 1);
++    cnt = sp->count & 0xffff;
++    for (lp = 0; lp < cnt; lp++) {
++        OffType *o = &sp->offlist[lp];
++        u32 f;
++        port_swap32(&o->offset, 4);       /* offset, translation */
++        port_swap16(&o->type, 6);         /* type info rx ry rz pad */
++        port_swap32(&o->rotation, 3);
++        memcpy(&f, &o->flags, 4);
++        f = __builtin_bswap32(f); (void)rotflag; /* TERRAINFLAGS declared reversed under PORT */
++        memcpy(&o->flags, &f, 4);
++        port_swap16(&o->prim, 2);
++        port_swap32(&o->datapos, 1);
++    }
++    st = ts + 2;
++    for (lp = 0; lp < cnt; lp++) {
++        OffType *o = &sp->offlist[lp];
++        short *blk_end = st + o->offset;
++        if ((char *)blk_end > end) blk_end = (short *)end;
++        switch (o->type) {
++        case 0:
++        case 1: {
++            short *m = st;
++            while (m + 1 < blk_end) {
++                s32 n;
++                port_swap16(m, 2);
++                if (m[0] < 0) break;
++                n = m[1];
++                port_swap32(m + 2, 4);
++                {
++                    char *t = (char *)(m + 10);
++                    s32 k;
++                    for (k = 0; k < n && t + sizeof(tertype) <= (char *)blk_end; k++, t += sizeof(tertype))
++                        port_swap32(t, 24);
++                    m = (short *)t;
++                }
++            }
++            break;
++        }
++        case 2:
++            if (st + 4 <= blk_end) {
++                s32 n;
++                port_swap32(st, 1);
++                port_swap16(st + 2, 2);
++                n = (u16)st[2];
++                if ((char *)(st + 4) + n * 12 <= (char *)blk_end) port_swap32(st + 4, n * 3);
++            }
++            break;
++        default:
++            break;
++        }
++        st = blk_end;
++    }
++}
++#endif
++
+ //NGC MATCH
+ s32 ReadTerrain(u8* name2, s32 situ, short** store, TERRSET* Tempterr) {
+     OffFileType* sceneptr;
+@@ -68,6 +141,9 @@ s32 ReadTerrain(u8* name2, s32 situ, short** store, TERRSET* Tempterr) {
+     }
+ 
+     ts = *store;
++#ifdef PORT
++    port_swap_terrain(ts, fsize);
++#endif
+     sceneptr = (OffFileType*)(ts + *(s32*)ts);
+     sceneptr->count &= 0xffff;
+     *store += 2;
+@@ -2959,7 +3035,14 @@ void ScanTerrain(s32 platscan, s32 extramask) {
+ 
+     for (WallSpl = (WallSpline *)CurTerr->wallinfo; WallSpl != 0; WallSpl = (WallSpline *)((int*)WallSpl)[-1]) { //check
+         for (a = 0; a < WallSpl->count; a += 0x10) {
++#ifdef PORT
++            /* the DOL compares with FLOAT_INTMAX (lbl_8011BC9C), the marker ReadTerrain
++             * puts on a spline's last, partial block: with 0.02f those blocks were
++             * skipped and the ends of wall splines did not block the player */
++            if (WallSpl->spl[a].y != FLOAT_INTMAX) {
++#else
+             if (WallSpl->spl[a].y != 0.02f) {
++#endif
+                 if (
+                     (WallSpl->spl[a + 1].y >= minx) 
+                     && (WallSpl->spl[a].y <= maxx)
+diff --git a/src/gamelib/terrain.h b/src/gamelib/terrain.h
+index 8615103..1611bfe 100644
+--- a/src/gamelib/terrain.h
++++ b/src/gamelib/terrain.h
+@@ -13,12 +13,25 @@ typedef enum terr_type {
+ } TERR_TYPE;
+ 
+ typedef struct TERRAINFLAGS_s {
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++    u32 : 31; /* PORT: pad so the value matches the big-endian bit positions */
+     u32 rot : 1;
++#else
++    u32 rot : 1;
++#endif
+ } TERRAINFLAGS;
+ 
+ typedef struct platattrib {
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++    unsigned int : 30; /* PORT: pad so the value matches the big-endian bit positions */
++    unsigned int hit : 1;
++    unsigned int rotate : 1;
++#else
+     unsigned int rotate : 1;
+     unsigned int hit : 1;
++#endif
+ } PLATATTRIB;
+ 
+ typedef struct {
+diff --git a/src/nu3dx/nu3dxtypes.h b/src/nu3dx/nu3dxtypes.h
+index 2bf0510..a73f59a 100644
+--- a/src/nu3dx/nu3dxtypes.h
++++ b/src/nu3dx/nu3dxtypes.h
+@@ -177,6 +177,23 @@ struct nusystex_s
+ struct numtlattrib_s
+ {
+     //struct {
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	unsigned int uvmode : 1; // Offset: 0x0, Bit Offset: 31, Bit Size: 1
++	unsigned int afail : 2; // Offset: 0x0, Bit Offset: 29, Bit Size: 2
++	unsigned int aref : 8; // Offset: 0x0, Bit Offset: 21, Bit Size: 8
++	unsigned int atst : 3; // Offset: 0x0, Bit Offset: 18, Bit Size: 3
++	unsigned int fill : 1; // Offset: 0x0, Bit Offset: 17, Bit Size: 1
++	unsigned int colour : 1; // Offset: 0x0, Bit Offset: 16, Bit Size: 1
++	unsigned int lighting : 2; // Offset: 0x0, Bit Offset: 14, Bit Size: 2
++	unsigned int zmode : 2; // Offset: 0x0, Bit Offset: 12, Bit Size: 2
++	unsigned int cull : 2; // Offset: 0x0, Bit Offset: 10, Bit Size: 2
++	unsigned int vtc : 2; // Offset: 0x0, Bit Offset: 8, Bit Size: 2
++	unsigned int utc : 2; // Offset: 0x0, Bit Offset: 6, Bit Size: 2
++	unsigned int fx : 2; // Offset: 0x0, Bit Offset: 4, Bit Size: 2
++	unsigned int filter : 2; // Offset: 0x0, Bit Offset: 2, Bit Size: 2
++	unsigned int alpha : 2; // Offset: 0x0, Bit Offset: 0, Bit Size: 2
++#else
+ 	unsigned int alpha : 2; // Offset: 0x0, Bit Offset: 0, Bit Size: 2
+ 	unsigned int filter : 2; // Offset: 0x0, Bit Offset: 2, Bit Size: 2
+ 	unsigned int fx : 2; // Offset: 0x0, Bit Offset: 4, Bit Size: 2
+@@ -191,6 +208,7 @@ struct numtlattrib_s
+ 	unsigned int aref : 8; // Offset: 0x0, Bit Offset: 21, Bit Size: 8
+ 	unsigned int afail : 2; // Offset: 0x0, Bit Offset: 29, Bit Size: 2
+ 	unsigned int uvmode : 1; // Offset: 0x0, Bit Offset: 31, Bit Size: 1
++#endif
+     //} _bitfld;
+     //u32 _word;
+ };
+@@ -414,8 +432,14 @@ struct numtl_s
+ 	u8 special_id;
+ 	s16 K;
+ 	u8 L;
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	u8 vanmmode : 4;
++	u8 uanmmode : 4;
++#else
+ 	u8 uanmmode : 4;
+ 	u8 vanmmode : 4;
++#endif
+ 	f32 du;
+ 	f32 dv;
+ 	f32 su;
+@@ -536,10 +560,19 @@ struct NUNODE_s
+ // Size: 0x4
+ struct nuinstflags_s
+ {
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	int : 28; /* PORT: pad so the value matches the big-endian bit positions */
++	int isanimated : 1; // Offset: 0x0, Bit Offset: 3, Bit Size: 1
++	int visitest : 1; // Offset: 0x0, Bit Offset: 2, Bit Size: 1
++	int onscreen : 1; // Offset: 0x0, Bit Offset: 1, Bit Size: 1
++	int visible : 1; // Offset: 0x0, Bit Offset: 0, Bit Size: 1
++#else
+ 	int visible : 1; // Offset: 0x0, Bit Offset: 0, Bit Size: 1
+ 	int onscreen : 1; // Offset: 0x0, Bit Offset: 1, Bit Size: 1
+ 	int visitest : 1; // Offset: 0x0, Bit Offset: 2, Bit Size: 1
+ 	int isanimated : 1; // Offset: 0x0, Bit Offset: 3, Bit Size: 1
++#endif
+ };
+ 
+ // Size: 0x50
+@@ -562,11 +595,21 @@ struct nuinstanim_s
+ 	float tfirst;
+ 	float tinterval;
+ 	float ltime;
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	unsigned int : 27; /* PORT: pad so the value matches the big-endian bit positions */
++	unsigned int oscillate : 1; // Offset: 0x50, Bit Offset: 4, Bit Size: 1
++	unsigned int repeating : 1; // Offset: 0x50, Bit Offset: 3, Bit Size: 1
++	unsigned int waiting : 1; // Offset: 0x50, Bit Offset: 2, Bit Size: 1
++	unsigned int backwards : 1; // Offset: 0x50, Bit Offset: 1, Bit Size: 1
++	unsigned int playing : 1; // Offset: 0x50, Bit Offset: 0, Bit Size: 1
++#else
+ 	unsigned int playing : 1; // Offset: 0x50, Bit Offset: 0, Bit Size: 1
+ 	unsigned int backwards : 1; // Offset: 0x50, Bit Offset: 1, Bit Size: 1
+ 	unsigned int waiting : 1; // Offset: 0x50, Bit Offset: 2, Bit Size: 1
+ 	unsigned int repeating : 1; // Offset: 0x50, Bit Offset: 3, Bit Size: 1
+ 	unsigned int oscillate : 1; // Offset: 0x50, Bit Offset: 4, Bit Size: 1
++#endif
+ 	int ipad[2]; // Offset: 0x54
+ 	unsigned char anim_ix;
+ 	char pad[3];
+@@ -575,9 +618,17 @@ struct nuinstanim_s
+ // Size: 0x4
+ struct nuspecialflags
+ {
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	int : 29; /* PORT: pad so the value matches the big-endian bit positions */
++	int ext_onscreen : 1; // Offset: 0x0, Bit Offset: 2, Bit Size: 1
++	int ext_vis : 1; // Offset: 0x0, Bit Offset: 1, Bit Size: 1
++	int ext : 1; // Offset: 0x0, Bit Offset: 0, Bit Size: 1
++#else
+ 	int ext : 1; // Offset: 0x0, Bit Offset: 0, Bit Size: 1
+ 	int ext_vis : 1; // Offset: 0x0, Bit Offset: 1, Bit Size: 1
+ 	int ext_onscreen : 1; // Offset: 0x0, Bit Offset: 2, Bit Size: 1
++#endif
+ };
+ 
+ 
+diff --git a/src/nu3dx/nuanim.c b/src/nu3dx/nuanim.c
+index e3eaf75..76d6006 100644
+--- a/src/nu3dx/nuanim.c
++++ b/src/nu3dx/nuanim.c
+@@ -98,6 +98,56 @@ struct nuanimdata_s * NuAnimDataFixPtrs(struct nuanimdata_s *animdata,s32 addres
+     return animdata;
+ }
+ 
++
++#ifdef PORT
++/* Byte-swap a .ani memory image (NUANIMDATAHDR_s + nuanimdata_s graph) in
++ * place, following the same pointers as NuAnimDataFixPtrs. Stored pointers
++ * are addresses in the original layout; 'delta' maps them to the buffer. */
++#define PORT_ANI_PTR(v) ((v) ? (void *)((s32)(v) + delta) : NULL)
++static void port_swap_animdata_image(struct NUANIMDATAHDR_s *hdr) {
++    s32 delta, c, n, k;
++    struct nuanimdata_s *ad;
++    port_swap32(hdr, 3);
++    delta = (s32)hdr - hdr->address_offset;
++    port_visit_reset();
++    ad = PORT_ANI_PTR(hdr->animdata);
++    if (ad == NULL || !port_visit_once(ad)) return;
++    port_swap32(ad, 4);
++    if (ad->chunks == NULL) return;
++    {
++        struct nuanimdatachunk_s **chunks = PORT_ANI_PTR(ad->chunks);
++        port_swap32(chunks, ad->nchunks);
++        for (c = 0; c < ad->nchunks; c++) {
++            struct nuanimdatachunk_s *ch = PORT_ANI_PTR(chunks[c]);
++            struct nuanimcurveset_s **sets;
++            if (ch == NULL || !port_visit_once(ch)) continue;
++            port_swap32(ch, 5);
++            if (ch->animcurvesets == NULL) continue;
++            sets = PORT_ANI_PTR(ch->animcurvesets);
++            port_swap32(sets, ch->numnodes);
++            for (n = 0; n < ch->numnodes; n++) {
++                struct nuanimcurveset_s *cs = PORT_ANI_PTR(sets[n]);
++                struct nuanimcurve_s **set;
++                if (cs == NULL || !port_visit_once(cs)) continue;
++                port_swap32(cs, 3);
++                if (cs->constants != NULL) port_swap32(PORT_ANI_PTR(cs->constants), cs->ncurves);
++                if (cs->set == NULL) continue;
++                set = PORT_ANI_PTR(cs->set);
++                port_swap32(set, cs->ncurves);
++                for (k = 0; k < cs->ncurves; k++) {
++                    struct nuanimcurve_s *cv = PORT_ANI_PTR(set[k]);
++                    if (cv == NULL || !port_visit_once(cv)) continue;
++                    port_swap32(cv, 4);
++                    if (cv->animkeys != NULL && port_visit_once(PORT_ANI_PTR(cv->animkeys)))
++                        port_swap32(PORT_ANI_PTR(cv->animkeys), cv->numkeys * 4);
++                }
++            }
++        }
++    }
++}
++#undef PORT_ANI_PTR
++#endif
++
+ //PS2 Match
+ struct nuanimdata_s * NuAnimDataLoadBuff(char *file,union variptr_u *buff,union variptr_u *endbuff)
+ {
+@@ -112,9 +162,16 @@ struct nuanimdata_s * NuAnimDataLoadBuff(char *file,union variptr_u *buff,union
+   addroff = NuFileLoadBuffer(file,mem,(s32)endbuff->voidptr - (s32)mem);
+   if (addroff == 0) {
+     NuErrorProlog("..\\nu2.ps2\\nu3d\\nuanim.c",0xb6e)("Could not read from <%s>, either file is not there or the buffer may be full",file);
++#ifdef PORT
++    /* the GameCube survives this by reading address 0; return "no anim" instead */
++    return NULL;
++#endif
+   }
+ 
+   dathdr = (struct NUANIMDATAHDR_s *)buff->voidptr;
++#ifdef PORT
++  port_swap_animdata_image(dathdr);
++#endif
+   buff->voidptr = (void *)((s32)&dathdr->version + addroff);
+   tmp = (s32)dathdr - dathdr->address_offset;
+   dathdr->address_offset = tmp;
+@@ -279,6 +336,9 @@ struct nuanimdata_s* NuAnimDataRead(s32 fh)
+         if (bytes != 0) {
+             chunk->keys = (struct nuanimkey_s *)NuMemAlloc(bytes << 4);		//chunk->keys = (struct nuanimkey_s *)NuMemAllocFn(bytes << 4, "..\\nu2.ps2\\nu3d\\nuanim.c", 0x19E);
+             NuFileRead(fh, chunk->keys, bytes << 4);
++#ifdef PORT
++            port_swap32(chunk->keys, (bytes << 4) / 4);
++#endif
+         }
+         else {
+             chunk->keys = NULL;
+@@ -288,6 +348,9 @@ struct nuanimdata_s* NuAnimDataRead(s32 fh)
+         if (bytes != 0) {
+             chunk->curves = (struct nuanimcurve_s *)NuMemAlloc(bytes << 4);	//chunk->curves = (struct nuanimcurve_s *)NuMemAllocFn(bytes << 4, "..\\nu2.ps2\\nu3d\\nuanim.c", 0x1AB);
+             NuFileRead(fh, chunk->curves, bytes << 4);
++#ifdef PORT
++            port_swap32(chunk->curves, (bytes << 4) / 4);
++#endif
+         }
+         else {
+             chunk->curves = NULL;
+@@ -694,7 +757,19 @@ f32 NuAnimCurveCalcVal2(struct nuanimcurve_s* animcurve, struct nuanimtime_s* at
+     int offset;
+     u8* test;
+ 
++#ifdef PORT
++    /* the .ani loader swaps mask as a u32: take bytes 1..3 of the big-endian
++     * word by value (the byte view picked the wrong bytes on little-endian:
++     * wrong key, extrapolated blend-shape weights -> characters stretching) */
++    u8 port_mask_bytes[4];
++    port_mask_bytes[0] = (u8)(animcurve->mask >> 24);
++    port_mask_bytes[1] = (u8)(animcurve->mask >> 16);
++    port_mask_bytes[2] = (u8)(animcurve->mask >> 8);
++    port_mask_bytes[3] = (u8)animcurve->mask;
++    test = port_mask_bytes;
++#else
+     test = (u8*)&animcurve->mask; // ???
++#endif
+     switch (atime->time_byte) {
+         case 0:
+             offset = BitCountTable[(animcurve->mask >> 0x18) & atime->time_mask];
+diff --git a/src/nu3dx/nucamera.c b/src/nu3dx/nucamera.c
+index f999be2..7601c8e 100644
+--- a/src/nu3dx/nucamera.c
++++ b/src/nu3dx/nucamera.c
+@@ -112,6 +112,10 @@ void NuCameraSet(struct nucamera_s *camera) {
+         NuMtxMul(&vmtx,&vmtx,&global_reflect.mtx);
+         NuMtxMul(&vmtx,&vmtx,&mM);
+     }
++#ifdef PORT /* widescreen mode: culling and screen projection follow the wider view */
++    { extern float port_wide_factor(void);
++    global_camera.aspect /= port_wide_factor(); }
++#endif
+     SetProjectionMatrix(&pmtx,global_camera.fov,global_camera.aspect,global_camera.nearclip,global_camera.farclip);
+     NuVpGetClippingMtx(&cmtx);
+     NuVpGetScalingMtx(&smtx);
+diff --git a/src/nu3dx/nuglass.c b/src/nu3dx/nuglass.c
+index 747bee8..b784d7d 100644
+--- a/src/nu3dx/nuglass.c
++++ b/src/nu3dx/nuglass.c
+@@ -6,7 +6,11 @@
+ #include "../gamecode/creature.h"
+ #include "../system.h"
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32 spectid;
++#else
+ static s32 spectid;
++#endif
+ extern s32 Level;
+ 
+ void NuShaderSetGlassMix(float mix);
+diff --git a/src/nu3dx/nuhgobj.c b/src/nu3dx/nuhgobj.c
+index ec81030..283fcc5 100644
+--- a/src/nu3dx/nuhgobj.c
++++ b/src/nu3dx/nuhgobj.c
+@@ -28,7 +28,9 @@ struct NUHGOBJ_s* NuHGobjLoad(char* file) {
+     }
+     else
+     {
++#ifndef PORT /* callers pass string literals; lowering them is not needed by the port */
+         strlwr(file);
++#endif
+     }
+ 
+     return hgobj;
+@@ -206,9 +208,21 @@ static void ReadNuIFFHGobjSet(s32 fh, struct NUHGOBJ_s* hgobj) {
+         for (i = 0; i < hgobj->num_joints; i++) {
+             NuFileRead(fh, &hgobj->joints[i].flags, sizeof(char));
+             NuFileRead(fh, &hgobj->T[i], sizeof(struct numtx_s));
++#ifdef PORT
++            port_swap32(&hgobj->T[i], (sizeof(struct numtx_s)) / 4);
++#endif
+             NuFileRead(fh, &hgobj->INV_WT[i], sizeof(struct numtx_s));
++#ifdef PORT
++            port_swap32(&hgobj->INV_WT[i], (sizeof(struct numtx_s)) / 4);
++#endif
+             NuFileRead(fh, &hgobj->joints[i].orient, sizeof(struct numtx_s));
++#ifdef PORT
++            port_swap32(&hgobj->joints[i].orient, (sizeof(struct numtx_s)) / 4);
++#endif
+             NuFileRead(fh, &hgobj->joints[i].locator_offset, sizeof(struct nuvec_s));
++#ifdef PORT
++            port_swap32(&hgobj->joints[i].locator_offset, (sizeof(struct nuvec_s)) / 4);
++#endif
+             hgobj->joints[i].parent_ix = NuFileReadChar(fh);
+             str_ix = NuFileReadInt(fh);
+             if (str_ix != 0) {
+@@ -267,6 +281,9 @@ static void ReadNuIFFHGobjSet(s32 fh, struct NUHGOBJ_s* hgobj) {
+             for (i = 0; i < hgobj->num_points_of_interest; i++) {
+                 hgobj->points_of_interest[i].parent_joint_ix = NuFileReadChar(fh);
+                 NuFileRead(fh, &hgobj->points_of_interest[i].offset, sizeof(struct numtx_s));
++#ifdef PORT
++                port_swap32(&hgobj->points_of_interest[i].offset, (sizeof(struct numtx_s)) / 4);
++#endif
+                 str_ix = NuFileReadInt(fh);
+                 if (str_ix != 0) {
+                     hgobj->points_of_interest[i].name = &hgobj->string_table[str_ix-1];
+@@ -295,6 +312,9 @@ static void ReadNuIFFHGobjSet(s32 fh, struct NUHGOBJ_s* hgobj) {
+                         NuErrorProlog("C:/source/crashwoc/code/nu3dx/nuhgobj.c",0x289)("failed to alloc shadow ellipsoids");
+                     }
+                     NuFileRead(fh, shadow_data->ellipsoids, bytes);
++#ifdef PORT
++                    port_swap32(shadow_data->ellipsoids, (bytes) / 4);
++#endif
+                 }
+                 shadow_data->ncylinders = NuFileReadChar(fh);
+                 if (shadow_data->ncylinders != 0) {
+@@ -304,6 +324,9 @@ static void ReadNuIFFHGobjSet(s32 fh, struct NUHGOBJ_s* hgobj) {
+                         NuErrorProlog("C:/source/crashwoc/code/nu3dx/nuhgobj.c", 0x294)("failed to alloc shadow cylinders");
+                     }
+                     NuFileRead(fh, shadow_data->cylinders, bytes);
++#ifdef PORT
++                    port_swap32(shadow_data->cylinders, (bytes) / 4);
++#endif
+                 }
+                 shadow_data->nshadow_meshes = NuFileReadChar(fh);
+                 if (shadow_data->nshadow_meshes != 0) {
+@@ -317,10 +340,16 @@ static void ReadNuIFFHGobjSet(s32 fh, struct NUHGOBJ_s* hgobj) {
+                         bytes = NuFileReadInt(fh) * sizeof(struct nuvec4_s);
+                         shadow_data->shadow_meshes[j].normals = NuMemAlloc(bytes);
+                         NuFileRead(fh, shadow_data->shadow_meshes[j].normals, bytes);
++#ifdef PORT
++                        port_swap32(shadow_data->shadow_meshes[j].normals, (bytes) / 4);
++#endif
+ 
+                         bytes = NuFileReadInt(fh) * sizeof(struct nuvec4_s);
+                         shadow_data->shadow_meshes[j].verts = NuMemAlloc(bytes);
+                         NuFileRead(fh, shadow_data->shadow_meshes[j].verts, bytes);
++#ifdef PORT
++                        port_swap32(shadow_data->shadow_meshes[j].verts, (bytes) / 4);
++#endif
+                     }
+                 }
+                 shadow_data->joint = NuFileReadChar(fh);
+diff --git a/src/nu3dx/nulight.c b/src/nu3dx/nulight.c
+index 61054f6..62a4d58 100644
+--- a/src/nu3dx/nulight.c
++++ b/src/nu3dx/nulight.c
+@@ -92,8 +92,15 @@ void* NuLightCreate(void) {
+     alloclight = freelight;
+     id = alloclight;
+     freelight = next;
++#ifdef PORT
++    /* the original also writes light[-1].last when a list is empty; on the
++       port that word is another global (currentlight1 on Vita) */
++    if (freelight >= 0) light[freelight].last = -1;
++    if (tempalloclight >= 0) light[tempalloclight].last = alloclight;
++#else
+     light[freelight].last = -1;
+     light[tempalloclight].last = alloclight;
++#endif
+     light[alloclight].next = tempalloclight;
+     memset(&light[id],0,100);
+     NuMtxSetIdentity((struct Mtx *)&light[id].light.mtx);
+diff --git a/src/nu3dx/numtl.c b/src/nu3dx/numtl.c
+index 9685b8c..1ce3699 100644
+--- a/src/nu3dx/numtl.c
++++ b/src/nu3dx/numtl.c
+@@ -200,6 +200,9 @@ struct numtl_s * NuMtlRead(s32 fh) {
+ 
+   mtl = NuMtlCreate(1);
+   NuFileRead(fh,mtl,0x54);
++#ifdef PORT
++  port_fix_numtl(mtl);
++#endif
+   return mtl;
+ }
+ 
+diff --git a/src/nu3dx/nurndr.c b/src/nu3dx/nurndr.c
+index b2137e9..fc2b069 100644
+--- a/src/nu3dx/nurndr.c
++++ b/src/nu3dx/nurndr.c
+@@ -12,7 +12,11 @@
+ 
+ s32 GS_Parallax;
+ static struct nugeomitem_s geomitem[2048];
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32 geomitem_cnt;
++#else
+ static s32 geomitem_cnt;
++#endif
+ static s32 hgobj_enabled;
+ struct numtx_s mtx_array2HGobjRndrDwa[256];
+ struct numtx_s mtx_array2HGobj[256];
+@@ -63,7 +67,15 @@ void NuRndrEndScene(void) {
+ 
+ //MATCH GCN
+ void NuRndrFlush(void) {
++#ifdef PORT
++    extern void tbslotBegin(int tbh, int slotix);
++    extern void tbslotEnd(int tbh, int slotix);
++    tbslotBegin(0, 33); /* port profile: material lists rendered */
+     NuMtlRender();
++    tbslotEnd(0, 33);
++#else
++    NuMtlRender();
++#endif
+     NuLightClearStoredLights();
+ }
+ 
+@@ -523,13 +535,25 @@ s32 NuRndrStrip3d(struct nuvtx_tc1_s **vtx,struct numtl_s *mtl,struct numtx_s* w
+     
+     for (i = 0; i < ix; i++) {
+         memcpy(vb, *vtx, 0x24);
++#ifdef PORT
++        vb = (struct nuvtx_tc1_s *)((s32)vb + stride);
++#else
+         (s32)vb += stride;
++#endif
+         vtx++;
+         memcpy(vb, *vtx, 0x24);
++#ifdef PORT
++        vb = (struct nuvtx_tc1_s *)((s32)vb + stride);
++#else
+         (s32)vb += stride;
++#endif
+         vtx++;
+         memcpy(vb, *vtx, 0x24);
++#ifdef PORT
++        vb = (struct nuvtx_tc1_s *)((s32)vb + stride);
++#else
+         (s32)vb += stride;
++#endif
+         vtx--;
+     }
+     
+@@ -703,6 +727,25 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+ 
+   blendgeom = item->geom->blendgeom;
+   DBTimerStart(4);
++#ifdef PORT
++  { /* debug aid (CWOC_DWALOG=1): implausible blend-shape weights */
++    static int on = -1;
++    extern void port_log(const char *fmt, ...);
++    extern int port_frame_count(void);
++    if (on < 0) on = getenv("CWOC_DWALOG") != NULL;
++    if (on) {
++      int k;
++      for (k = 0; k < blendgeom->nblends; k++) {
++        float bv = (*item->blendvals)[blendgeom->ix[k]];
++        if (!(bv >= -1.5f && bv <= 1.5f))
++          port_log("dwa f%d item %p blend %d/%d ix %d val %g dwa %p pool+%d ptrs+%d", port_frame_count(), (void *)item, k,
++                   blendgeom->nblends, blendgeom->ix[k], bv, (void *)*item->blendvals,
++                   (int)(*item->blendvals - rndr_blend_shape_deformer_wts),
++                   (int)(item->blendvals - rndr_blend_shape_deformer_wt_ptrs));
++      }
++    }
++  }
++#endif
+   DBTimerStart(0xd);
+   PPCMtmmcr0(0x8b);
+   PPCMtmmcr1(0x78400000);
+diff --git a/src/nu3dx/nurndr.h b/src/nu3dx/nurndr.h
+index 2db1eb2..28a5c02 100644
+--- a/src/nu3dx/nurndr.h
++++ b/src/nu3dx/nurndr.h
+@@ -171,7 +171,11 @@ s32 NuRndrShadowCnt;
+ 
+ struct WaterDat NuRndrWaterRipDat[32];
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32 rndrmtx_cnt;
++#else
+ static s32 rndrmtx_cnt;
++#endif
+ 
+ s32 rndrmtx_cnt_max;
+ 
+@@ -181,13 +185,27 @@ s32 padflag;
+ 
+ s32 geomitem_cnt_max;
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32 rndr_blend_shape_deformer_wt_ptrs_cnt;
++#else
+ static s32 rndr_blend_shape_deformer_wt_ptrs_cnt;
++#endif
+ 
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32 rndr_blend_shape_deformer_wt_cnt;
++#else
+ static s32 rndr_blend_shape_deformer_wt_cnt;
++#endif
+ 
+ static float* rndr_blend_shape_deformer_wt_ptrs[2048];
+ 
++#ifdef PORT
++/* blend shapes with no weights of their own read past the end of the array;
++   keep that slack zero (no deformation) instead of the next global */
++static float rndr_blend_shape_deformer_wts[1024 + 256];
++#else
+ static float rndr_blend_shape_deformer_wts[1024];
++#endif
+ 
+ static struct numtx_s rndrmtx[1536];
+ 
+diff --git a/src/nu3dx/nuscene.c b/src/nu3dx/nuscene.c
+index ef903b7..ee4e72f 100644
+--- a/src/nu3dx/nuscene.c
++++ b/src/nu3dx/nuscene.c
+@@ -7,6 +7,9 @@
+ #include "nutex.h"
+ #include "../numath.h"
+ #include <string.h>
++#ifdef PORT
++#include "port.h"
++#endif
+ 
+ static const unsigned long D3DSIMPLERENDERSTATEENCODE[82] = {
+     0x00040260, 0x00040264, 0x00040268, 0x0004026C, 0x00040270, 0x00040274,
+@@ -79,11 +82,26 @@ void ReadNuIFFTextureSet(s32 handle,struct nuscene_s *scene) {
+       nuTex.decal = 0;
+       imsize = ((nuTex.type & 0x80) == 0) ? NuTexImgSize(nuTex.type,nuTex.width,nuTex.height) : nuTex.mmcnt;
+       nuTex.bits = (void*)malloc_x(imsize);
++#ifdef PORT
++      if (getenv("CWOC_TEXLOG")) port_log("tex %d/%d: type=0x%x %dx%d mm=%d imsize=%d", i, count, nuTex.type, nuTex.width, nuTex.height, nuTex.mmcnt, imsize);
++#endif
+       NuFileRead(handle,nuTex.bits,imsize);
++#ifdef PORT
++      /* GameCube-native formats (type & 0x80) stay big-endian for the GX
++       * texture decoder; NU formats hold native 16/32-bit pixels. */
++      if ((nuTex.type & 0x80) == 0) {
++        s32 bpp = NuTexPixelSize(nuTex.type);
++        if (bpp == 32) port_swap32(nuTex.bits, imsize / 4);
++        else if (bpp == 16) port_swap16(nuTex.bits, imsize / 2);
++      }
++#endif
+       pal_size = NuTexPalSize(nuTex.type);
+       if (pal_size != 0) {
+         nuTex.pal = (s32 *)malloc_x(pal_size);
+         NuFileRead(handle,nuTex.pal,pal_size);
++#ifdef PORT
++        port_swap32(nuTex.pal, pal_size / 4);
++#endif
+       }
+       scene->tids[scene->numtids++] = (s16)NuTexCreate(&nuTex);
+       
+@@ -190,6 +208,21 @@ static void ReadNuIFFGSplineSet(s32 fh, struct nugscn_s *gsc) {
+         temp = temp2;
+         NuFileRead(fh,temp,name_ix);
+         gsc->splines = (struct nugspline_s *)NuMemAlloc(gsc->numsplines * sizeof(struct nugspline_s));
++#ifdef PORT
++            /* [s32 len][s32 name offset][len * 3 floats] per spline, big-endian */
++            for(i = 0; i < gsc->numsplines; i++) {
++               port_swap32(temp, 2);
++               gsc->splines[i].len = (s16)*(s32*)temp;
++               temp += 4;
++               gsc->splines[i].name = gsc->nametable + (s16)*(s32*)temp;
++               temp += 4;
++               gsc->splines[i].pts = temp;
++               gsc->splines[i].ptsize = 0xc;
++               port_swap32(temp, gsc->splines[i].len * 3);
++               temp += gsc->splines[i].len * 0xc;
++            }
++            if (0)
++#endif
+             for(i = 0; i < gsc->numsplines; i++) {
+                gsc->splines[i].len = *(s16*)(temp + 2);
+                 temp += 4;
+@@ -255,6 +288,9 @@ struct nugobj_s* ReadNuIFFGeom(s32 handle, struct numtl_s** mtls) {
+         switch (gobject->type) {
+             case NUGOBJ_MESH:
+                 NuFileRead(handle, &gobject->origin, 0xc);
++#ifdef PORT
++                port_swap32(&gobject->origin, 3);
++#endif
+                 count = NuFileReadInt(handle);
+                 for (j = 0; j < count; j++) {
+                     geom = NuGeomCreate();
+@@ -321,6 +357,9 @@ void ReadNuIFFGeomVtx(s32 fh, struct nugeom_s* geom)
+         }
+ 
+         NuFileRead(fh, vtx, cnt * 0x24);
++#ifdef PORT
++        port_fix_nuvtx_tc1(vtx, cnt);
++#endif
+         GS_ARGBTORGBA(vtx, cnt);
+     }
+ }
+@@ -344,6 +383,9 @@ static void ReadNuIFFFaceOnGeom(s32 handle,struct nufaceongeom_s *face) {
+   bytes = face->nfaceons * 0x18;
+   face->faceons = (struct nufaceon_s *)NuMemAlloc(bytes);
+   NuFileRead(handle,face->faceons,bytes);
++#ifdef PORT
++  port_swap32(face->faceons, bytes / 4);
++#endif
+   return;
+ }
+ 
+@@ -383,6 +425,9 @@ void ReadNuIFFGeomTri(fileHandle handle, struct nugeom_s* geom, enum nuprimtype_
+     prim = NuPrimCreate(cnt, type);
+     idxptr = (u16*)prim->idxbuff;
+     NuFileRead(handle, idxptr, cnt * 2);
++#ifdef PORT
++    port_swap16(idxptr, cnt);
++#endif
+     NuGeomAddPrim(geom, prim);
+ }
+ 
+@@ -400,6 +445,9 @@ static void ReadNuIFFGeomSkin(s32 handle,struct nugeom_s *geom) {
+       bytes = geom->vtxcnt << 4;
+       geom->vtxskininfo = NuMemAlloc(bytes);
+       NuFileRead(handle,geom->vtxskininfo,bytes);
++#ifdef PORT
++      port_swap_layout(geom->vtxskininfo, "4441111", geom->vtxcnt); /* wts[3], joint_ixs[3], pad */
++#endif
+     }
+     else {
+         for (i = 0; i < count; i++) {
+@@ -415,6 +463,9 @@ static void ReadNuIFFGeomSkin(s32 handle,struct nugeom_s *geom) {
+           bytes = (skin->vtxcnt * 4) * skin->mtxcnt;
+           skin->weights = (f32 *)NuMemAlloc(bytes);
+           NuFileRead(handle,skin->weights,bytes);
++#ifdef PORT
++          port_swap32(skin->weights, bytes / 4);
++#endif
+           NuGeomAddSkin(geom,skin);
+         }
+     }
+@@ -442,9 +493,15 @@ static void ReadNuIFFBlendShape(s32 fh, struct nugeom_s *geom) {
+         nbytes = nblends * sizeof(s32);
+         geom->blendgeom->ix = (s32 *)NuMemAlloc(nbytes);
+         NuFileRead(fh, geom->blendgeom->ix, nbytes);
++#ifdef PORT
++        port_swap32(geom->blendgeom->ix, nbytes / 4);
++#endif
+         nbytes = NuFileReadInt(fh);
+         geom->blendgeom->offsets = (struct nuvec_s *)NuMemAlloc(nbytes);
+         NuFileRead(fh, geom->blendgeom->offsets, nbytes);
++#ifdef PORT
++        port_swap32(geom->blendgeom->offsets, nbytes / 4);
++#endif
+         for (i = 0; i < nblends; i++) {
+             if (NuFileReadChar(fh)) {
+                 geom->blendgeom->blend_offsets[i] = &geom->blendgeom->offsets[next_ix];
+@@ -502,11 +559,17 @@ s32 ReadNuIFFInstSet(s32 fh,struct nuinstance_s **instances,struct nuinstanim_s
+   num_instances = NuFileReadInt(fh);
+   *instances = (struct nuinstance_s *)NuMemAlloc(num_instances * sizeof(struct nuinstance_s)); //,"..\\nu2.ps2\\nu3d\\nuscene.c",0x5a3
+   NuFileRead(fh,*instances,num_instances * sizeof(struct nuinstance_s));
++#ifdef PORT
++  port_fix_nuinstances(*instances, num_instances);
++#endif
+   num_instanims = NuFileReadInt(fh);
+   if (num_instanims != 0) {
+       bytes = num_instanims * sizeof(struct nuinstanim_s);
+     linstanims = (struct nuinstanim_s *)NuMemAlloc(bytes); //,"..\\nu2.ps2\\nu3d\\nuscene.c",0x5aa
+     NuFileRead(fh,linstanims,bytes);
++#ifdef PORT
++    port_fix_nuinstanims(linstanims, num_instanims);
++#endif
+     if (instanims != NULL) {
+       *instanims = linstanims;
+     }
+@@ -531,6 +594,9 @@ static void ReadNuIFFSpecialObjects(s32 fh,struct nugscn_s *gsc) {
+   gsc->numspecial = NuFileReadInt(fh);
+   file_specials = (struct nufspecial_s *)malloc_x(gsc->numspecial * 0x50);
+   NuFileRead(fh,file_specials,gsc->numspecial * 0x50);
++#ifdef PORT
++  port_fix_nufspecials(file_specials, gsc->numspecial);
++#endif
+   gsc->specials = (struct nuspecial_s *)NuMemAlloc(gsc->numspecial * 0x50);
+ 
+   for(i = 0; i < gsc->numspecial; i++) {
+@@ -599,9 +665,15 @@ void ReadNuIFFTexAnimSet(s32 fh, struct nugscn_s* gsc, s16* tids)
+     NuFileReadInt(fh);
+     gsc->texanims = NuMemAlloc(gsc->numtexanims * sizeof(struct nutexanim_s)); //, "..\\nu2.ps2\\nu3d\\nugscn.c", 0xC68
+     NuFileRead(fh, gsc->texanims, gsc->numtexanims * sizeof(struct nutexanim_s));
++#ifdef PORT
++    port_fix_nutexanims(gsc->texanims, gsc->numtexanims);
++#endif
+     cnt = NuFileReadInt(fh) * 2;
+     gsc->texanim_tids = (s16*)NuMemAlloc(cnt); //, "..\\nu2.ps2\\nu3d\\nugscn.c", 0xC6D
+     NuFileRead(fh, gsc->texanim_tids, cnt);
++#ifdef PORT
++    port_swap16(gsc->texanim_tids, cnt / 2);
++#endif
+ 
+     for (i = 0; i < gsc->numtexanims; i++){
+         tex = &gsc->texanims[i]; //tex = gsc->texanims + (cnt << 5);
+@@ -709,7 +781,9 @@ struct nuscene_s * NuSceneLoad(char *filename) {
+   strcpy(file2,filename);
+   fh = NuFileOpen(file2,NUFILE_READ);
+   if (fh != 0) {
++#ifndef PORT /* callers pass string literals; lowering them is not needed by the port */
+             strlwr(filename);
++#endif
+             scene = (struct nuscene_s *)NuMemAlloc(0x3c);
+             memset(scene,0,0x3c);
+             blk = blkcnt;
+@@ -742,7 +816,9 @@ struct nuscene_s * NuSceneLoad(char *filename) {
+             }
+   }
+   else {
++#ifndef PORT
+     strlwr(filename);
++#endif
+   }
+   return scene;
+ }
+diff --git a/src/nu3dx/nutex.c b/src/nu3dx/nutex.c
+index f637787..b71967c 100644
+--- a/src/nu3dx/nutex.c
++++ b/src/nu3dx/nutex.c
+@@ -68,6 +68,9 @@ s32 NuTexCreate(struct nutex_s *nutex) {
+ 
+ //MATCH NGC
+ s32 NuTexGetDecalInfo(s32 tid) {
++#ifdef PORT
++  if (tid < 1 || tid > (int)(sizeof(tinfo) / sizeof(tinfo[0]))) return 0;
++#endif
+   return (s32)tinfo[tid + -1].tex.decal;
+ }
+ 
+@@ -84,7 +87,11 @@ s32 NuTexCreateFromSurface(struct nutex_s *tex, struct D3DTexture *surface) {
+ void NuTexDestroy(s32 id)
+ {
+ 	id--;
++#ifdef PORT
++	if (id > -1 && id < (int)(sizeof(tinfo) / sizeof(tinfo[0])))
++#else
+ 	if (id > -1)
++#endif
+ 	{
+ 		if (tinfo[id].tex.bits != NULL)
+ 		{
+@@ -111,6 +118,11 @@ u32 NuTexUnRef(s32 id)
+       return (void *) new_var;
+     }
+   }
++#ifdef PORT
++  /* the backbuffer pseudo texture (tid 0x270F, pause screen) is past the
++     table: GameCube decremented a random word, the port must not */
++  if (id >= (int)(sizeof(tinfo) / sizeof(tinfo[0]))) return 0;
++#endif
+   return --tinfo[id].ref;
+ }
+ 
+@@ -239,6 +251,12 @@ s32 NuTexReadBitmapMM(char *filename, s32 mmlevel, struct nutex_s *tex)
+             NuFilePos(fh);
+             NuFileRead(fh, &bmh.bfType, sizeof(bmh) - 2);
+             NuFileRead(fh, &bmi, sizeof(bmi));
++#ifdef PORT
++            /* the disc's BMPs were converted to big-endian by the original tools */
++            port_swap_layout(&bmh.bfType, "2422", 1);
++            port_swap32(&bmh.bfOffBits, 1);
++            port_swap_layout(&bmi, "44422444444", 1);
++#endif
+             switch (bmi.biBitCount) {
+             case 32:
+                 tex->type = NUTEX_RGBA32;
+@@ -252,23 +270,41 @@ s32 NuTexReadBitmapMM(char *filename, s32 mmlevel, struct nutex_s *tex)
+                 tex->type = NUTEX_PAL4;
+                 palsize = 0x40;
+                 NuFileRead(fh, palette_128, 0x40);
++#ifdef PORT
++                port_swap32(palette_128, 0x40 / 4);
++#endif
+                 for (i = 0; i < 16; i++) {
+                     colour.u32 = palette_128[i];
++#ifdef PORT /* same value-level swap as the big-endian byte swap */
++                    swap = colour.u8[3];
++                    colour.u8[3] = colour.u8[1];
++                    colour.u8[1] = swap;
++#else
+                     swap = colour.u8[0];
+                     colour.u8[0] = colour.u8[2];
+                     colour.u8[2] = swap;
++#endif
+                     palette_128[i] = colour.u32;
+                 }
+                 break;
+             case 8:
+                 tex->type = NUTEX_PAL8;
+                 NuFileRead(fh, palette_128, 0x400);
++#ifdef PORT
++                port_swap32(palette_128, 0x400 / 4);
++#endif
+                 palsize = 0x400;
+                 for (i = 0; i < 256; i++) {
+                     colour.u32 = palette_128[i];
++#ifdef PORT /* same value-level swap as the big-endian byte swap */
++                    swap = colour.u8[3];
++                    colour.u8[3] = colour.u8[1];
++                    colour.u8[1] = swap;
++#else
+                     swap = colour.u8[0];
+                     colour.u8[0] = colour.u8[2];
+                     colour.u8[2] = swap;
++#endif
+                     palette_128[i] = colour.u32;
+                 }
+                 break;
+@@ -299,6 +335,9 @@ s32 NuTexReadBitmapMM(char *filename, s32 mmlevel, struct nutex_s *tex)
+             }
+             tmpbuff = tex->bits;
+             NuFileRead(fh, tmpbuff, NuTexImgSize(tex->type, tex->width, tex->height));
++#ifdef PORT
++            if (tex->type == NUTEX_RGBA32) port_swap32(tmpbuff, NuTexImgSize(tex->type, tex->width, tex->height) / 4);
++#endif
+             dst.voidptr = malloc_x(rowsize);
+             top = tex->bits;
+             bottom = top + NuTexImgSize(tex->type, tex->width, tex->height) - rowsize;
+diff --git a/src/nu3dx/nutexanm.c b/src/nu3dx/nutexanm.c
+index 3764b64..e161c59 100644
+--- a/src/nu3dx/nutexanm.c
++++ b/src/nu3dx/nutexanm.c
+@@ -1,4 +1,7 @@
+-static char labtab[64][21];
++#ifndef PORT
++static
++#endif
++char labtab[64][21];
+ 
+ #include "nutxanm.h"
+ #include "../nucore/nufpar.h"
+@@ -32,12 +35,27 @@ static void pftaEnd(struct nufpar_s *fp);
+ static void pftaScriptname(struct nufpar_s *fp);
+ 
+ static int EvalVars(int cc, int a, int b);
+-static int ParGetCC(struct nufpar_s *fp);
+-static int LabTabFind(char *name);
+-static int XDefLabTabFind(char *name);
+-static void NuTexAnimXCall(int xdef_id, struct nutexanimenv_s *env);
+-
+-static struct nufpcomjmp_s nutexanimcomtab[19] = {
++#ifndef PORT
++static
++#endif
++int ParGetCC(struct nufpar_s *fp);
++#ifndef PORT
++static
++#endif
++int LabTabFind(char *name);
++#ifndef PORT
++static
++#endif
++int XDefLabTabFind(char *name);
++#ifndef PORT
++static
++#endif
++void NuTexAnimXCall(int xdef_id, struct nutexanimenv_s *env);
++
++#ifndef PORT
++static
++#endif
++struct nufpcomjmp_s nutexanimcomtab[19] = {
+     {"tex", pftaTex},
+     {"texadj", pftaTexAdj},
+     {"wait", pftaWait},
+@@ -59,6 +77,9 @@ static struct nufpcomjmp_s nutexanimcomtab[19] = {
+     {NULL, NULL}
+ };
+ 
++#ifdef PORT
++static /* file-local; nufile.c owns the global fpointers */
++#endif
+ s32 fpointers[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+ 
+ void NuTexAnimProgSysInit(void) {
+@@ -228,7 +249,10 @@ static int EvalVars(int cc, int a, int b) {
+     return 0;
+ }
+ 
+-static int ParGetCC(struct nufpar_s *fp) {
++#ifndef PORT
++static
++#endif
++int ParGetCC(struct nufpar_s *fp) {
+     int cc;
+ 
+     NuFParGetWord(fp);
+@@ -266,7 +290,10 @@ static int ParGetCC(struct nufpar_s *fp) {
+     return cc;
+ }
+ 
+-static int LabTabFind(char *name) {
++#ifndef PORT
++static
++#endif
++int LabTabFind(char *name) {
+     int i;
+     int cnt;
+ 
+@@ -293,7 +320,10 @@ static int LabTabFind(char *name) {
+     return labtabcnt - 1;
+ }
+ 
+-static int XDefLabTabFind(char *name) {
++#ifndef PORT
++static
++#endif
++int XDefLabTabFind(char *name) {
+     int i;
+     int cnt;
+ 
+@@ -541,7 +571,10 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *fna
+     return p;
+ }
+ 
+-static void NuTexAnimXCall(int xdef_id, struct nutexanimenv_s *env) {
++#ifndef PORT
++static
++#endif
++void NuTexAnimXCall(int xdef_id, struct nutexanimenv_s *env) {
+     struct nutexanimlist_s *list;
+     struct nutexanim_s *nta;
+     struct nutexanimenv_s *other_env;
+diff --git a/src/nu3dx/nutxanm.h b/src/nu3dx/nutxanm.h
+index ff84738..16e413a 100644
+--- a/src/nu3dx/nutxanm.h
++++ b/src/nu3dx/nutxanm.h
+@@ -55,15 +55,33 @@ void NuTexAnimAddList(struct nutexanim_s *nta);
+ void NuTexAnimRemoveList(struct nutexanim_s *nta);
+ 
+ 
+-static u32 nta_sig_on;
+-static u32 nta_sig_off;
+-static u32 nta_sig_old;
++#ifndef PORT
++static
++#endif
++u32 nta_sig_on;
++#ifndef PORT
++static
++#endif
++u32 nta_sig_off;
++#ifndef PORT
++static
++#endif
++u32 nta_sig_old;
+ s32 nta_labels[64];
+ char texanimbuff[32768];
+ u32 texanimbits;
+-static char xdeflabtab[256][21];
+-static s32 xdeflabtabcnt;
+-static s32 labtabcnt;
++#ifndef PORT
++static
++#endif
++char xdeflabtab[256][21];
++#ifndef PORT
++static
++#endif
++s32 xdeflabtabcnt;
++#ifndef PORT
++static
++#endif
++s32 labtabcnt;
+ 
+ 
+ // Size: 0x10
+@@ -83,7 +101,12 @@ struct nutexanim_s
+     struct nutexanim_s* prev;
+     short* tids;
+     short numtids;
++#ifdef PORT
++    short : 15; /* PORT: big-endian bit position */
++    short dynalloc : 1;
++#else
+     short dynalloc : 1; // Offset: 0xE, Bit Offset: 0, Bit Size: 1
++#endif
+     struct numtl_s* mtl; // Offset: 0x10
+     struct nutexanimenv_s* env;
+     char* ntaname;
+@@ -106,7 +129,12 @@ struct nutexanimenv_s
+     struct numtl_s* mtl;
+     short* tids;
+     int tex_ix;
++#ifdef PORT
++    int : 31; /* PORT: big-endian bit position */
++    int dynalloc : 1;
++#else
+     int dynalloc : 1; // Offset: 0xE8, Bit Offset: 0, Bit Size: 1
++#endif
+ };
+ 
+ 
+@@ -124,7 +152,12 @@ struct nutexanimprog_s
+     short xdef_addrs[32];
+     int xdef_cnt;
+     short eop;
++#ifdef PORT
++    short : 15; /* PORT: big-endian bit position */
++    short dynalloc : 1;
++#else
+     short dynalloc : 1; // Offset: 0x1B6, Bit Offset: 0, Bit Size: 1
++#endif
+     short code[1]; // Offset: 0x1B8
+ };
+ 
+@@ -136,7 +169,12 @@ struct nutexanimf_s
+     struct nutexanim_s* prev;
+     int tids;
+     short numtids; // Offset: 0xC
++#ifdef PORT
++    short : 15; /* PORT: big-endian bit position */
++    short dynalloc : 1;
++#else
+     short dynalloc : 1; // Offset: 0xE, DWARF: 0x1DFFB, Bit Offset: 0, Bit Size: 1
++#endif
+     int mtl; // Offset: 0x10
+     struct nutexanimenv_s* env;
+     int ntaname;
+@@ -156,8 +194,17 @@ struct nutexanimprog_s* sys_progs;
+ struct nutexanimlist_s ntalsysbuff[64];
+ struct nutexanimlist_s* ntal_first;
+ struct nutexanimlist_s* ntal_free;
+-static struct nutexanimprog_s* parprog;
+-static struct texanimscripts_s texanmscripts[24];
+-static struct nufpcomjmp_s nutexanimcomtab[19];
++#ifndef PORT
++static
++#endif
++struct nutexanimprog_s* parprog;
++#ifndef PORT
++static
++#endif
++struct texanimscripts_s texanmscripts[24];
++#ifndef PORT
++static
++#endif
++struct nufpcomjmp_s nutexanimcomtab[19];
+ 
+ #endif // !NUTEXANM_H
+diff --git a/src/nu3dx/nuwater.h b/src/nu3dx/nuwater.h
+index b49a9f5..22884dc 100644
+--- a/src/nu3dx/nuwater.h
++++ b/src/nu3dx/nuwater.h
+@@ -35,27 +35,75 @@ static s32 nwinst;
+ static s32 nwater_mtl;
+ static struct nugscn_s* wgsc[256];
+ static struct nuinstance_s* winst[256];
+-static s32 dynamicWaterInitialised;
+-static s32 dynamicWaterEnabled;
+-static s32 dynamicWaterForceStepOneTex;
+-static s32 dynamicWaterTextureIds[6];
+-static struct nuvec4_s dynamicWaterUVOffsets[2][6];
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterInitialised;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterEnabled;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterForceStepOneTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterTextureIds[6];
++#ifndef PORT
++static
++#endif
++struct nuvec4_s dynamicWaterUVOffsets[2][6];
+ struct numtl_s* water_copy_mtl;
+ s32 DropletTID;
+ struct nutex_s DropletTex;
+-static s32 dynamicWaterBlurTex;
+-static s32 dynamicWaterFlipState;
+-static s32 dynamicWaterForceTex;
+-static s32 dynamicWaterHeightSourceTex;
+-static s32 dynamicWaterHeightTargetTex;
+-static s32 dynamicWaterNormalTex;
+-static struct D3DSurface* dynamicWaterSurfaces[6];
+-static s32 dynamicWaterVelocitySourceTex;
+-static s32 dynamicWaterVelocityTargetTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterBlurTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterFlipState;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterForceTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterHeightSourceTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterHeightTargetTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterNormalTex;
++#ifndef PORT
++static
++#endif
++struct D3DSurface* dynamicWaterSurfaces[6];
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterVelocitySourceTex;
++#ifndef PORT
++static
++#endif
++s32 dynamicWaterVelocityTargetTex;
+ struct D3DTexture* pDropletTex;
+ struct numtl_s* dynamicWaterMaterial;
+-static float dynamicWaterDropFrequency;
+-static float dynamicWaterBlurDist;
++#ifndef PORT
++static
++#endif
++float dynamicWaterDropFrequency;
++#ifndef PORT
++static
++#endif
++float dynamicWaterBlurDist;
+ float dynamicWaterBlend;
+ float dynamicWaterScale;
+ static f32 dynamicWaterDropMaxScale;
+@@ -63,7 +111,11 @@ static f32 dynamicWaterDropMinScale;
+ static s32 dynamicWaterTurbulenceFrequency;
+ static f32 dynamicWaterTurbulenceScale;
+ static s32 dynamicWaterTurbulenceStrength;
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern float theta_step;
++#else
+ static float theta_step;
++#endif
+ struct nuvec4_s waterUVOffset[32];
+ 
+ #endif // !NUWATER_H
+diff --git a/src/nucore/nucoretypes.h b/src/nucore/nucoretypes.h
+index 23c0cfb..afb41cc 100644
+--- a/src/nucore/nucoretypes.h
++++ b/src/nucore/nucoretypes.h
+@@ -33,7 +33,13 @@ struct nudatinfo_s
+ 	s32 foffset;
+ 	s32 flen;
+ 	s32 uplen;
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++	s32 : 31; /* PORT: pad so the value matches the big-endian bit positions */
+ 	s32 ppack : 1; // Offset: 0xC, Bit Offset: 0, Bit Size: 1
++#else
++	s32 ppack : 1; // Offset: 0xC, Bit Offset: 0, Bit Size: 1
++#endif
+ };
+ 
+ // Size: 0x8
+diff --git a/src/nucore/nuerror.c b/src/nucore/nuerror.c
+index 6b5acb0..c439e2a 100644
+--- a/src/nucore/nuerror.c
++++ b/src/nucore/nuerror.c
+@@ -16,6 +16,9 @@ char captxt[0x100];
+ char* nufile;
+ u32 nuline;
+ u32 err_msg_quiet = 0;
++#ifdef PORT
++static /* distinct from numtl.c's flag; both were file-local in the original */
++#endif
+ u32 initialised = 0;
+ u32 dbg_msg_cnt = 0;
+ char* errfile;
+diff --git a/src/nucore/nufile.c b/src/nucore/nufile.c
+index 2fb83b4..b2fc28c 100644
+--- a/src/nucore/nufile.c
++++ b/src/nucore/nufile.c
+@@ -6,6 +6,19 @@
+ #include "nuerror.h"
+ #include <string.h>
+ 
++#ifdef PORT
++/* The GameCube fread_NGC always reports the requested size (reads are padded
++ * to 32 bytes and never short). libc fread is short at EOF, which would drive
++ * NuFileRead's 'bytesleft' negative; emulate the console behaviour. */
++size_t port_fread(void *buf, size_t sz, size_t n, FILE *f); /* timed (port_fs.c) */
++static size_t port_fread_full(void *buf, size_t size, size_t count, FILE *f) {
++    size_t want = size * count, got = port_fread(buf, 1, want, f);
++    if (got < want) memset((char *)buf + got, 0, want - got);
++    return count;
++}
++#define fread port_fread_full
++#endif
++
+ // Re-declare needed functions from numem.h
+ void* NuMemAlloc(s32 size);
+ void NuMemFree(void* data);
+@@ -269,6 +282,10 @@ s32 NuFileSeek(s32 handle, s32 offset, s32 origin)
+ 			offset -= bytesleft;
+ 		}
+ 		bytesleft = 0;
++#ifdef PORT
++		/* fseek_NGC also resets the position NuFilePos reports */
++		if (origin == NUFILE_SEEK_START) thisbytesread = offset;
++#endif
+ 		return fseek(fpointers[handle], (long)offset, forig[origin]);
+ 	}
+ }
+@@ -425,6 +442,9 @@ void NuStopLoadScreen(s32 screen) {
+ float NuFileReadFloat(s32 handle) {
+ 	float data = 0.0f;
+ 	NuFileRead(handle, &data, 4);
++#ifdef PORT
++	port_swap32(&data, 1);
++#endif
+ 	return data;
+ }
+ 
+@@ -432,6 +452,9 @@ float NuFileReadFloat(s32 handle) {
+ s32 NuFileReadInt(s32 handle) {
+ 	s32 data;
+ 	NuFileRead(handle, &data, 4);
++#ifdef PORT
++	port_swap32(&data, 1);
++#endif
+ 	return data;
+ }
+ 
+@@ -439,6 +462,9 @@ s32 NuFileReadInt(s32 handle) {
+ s16 NuFileReadShort(s32 handle) {
+ 	s16 data;
+ 	NuFileRead(handle, &data, 2);
++#ifdef PORT
++	port_swap16(&data, 1);
++#endif
+ 	return data;
+ }
+ 
+@@ -464,6 +490,9 @@ s32 NuFileBeginBlkRead(s32 handle, s32 blkType) {
+         pos = NuFilePos(handle);
+ 		blkinfo[bh].pos = pos;
+ 		NuFileRead(handle, &blkinfo[bh], 8);
++#ifdef PORT
++		port_swap32(&blkinfo[bh], 2); /* block id + size */
++#endif
+ 		if (blkinfo[bh].hdr.size < 0) {
+ 			blkinfo[bh].hdr.size = -blkinfo[bh].hdr.size;
+ 		}
+diff --git a/src/numath/nuquat.c b/src/numath/nuquat.c
+index 64a2d7a..9bcebdc 100644
+--- a/src/numath/nuquat.c
++++ b/src/numath/nuquat.c
+@@ -134,6 +134,33 @@ void NuQuatNormalise(struct Quat* dest, struct Quat* q)
+ 
+ void NuQuatSlerp(f32 alpha, struct Quat* dest, struct Quat* a, struct Quat* b)
+ {
++#ifdef PORT
++	{
++		/* the original (800C0EDC) uses the dot product a.b (not |a|^2) and
++		   computes the weights in double precision */
++		f64 d = a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
++		f64 sa, sb;
++		f32 bx = b->x, by = b->y, bz = b->z, bw = b->w;
++		if (d < 0.0) {
++			bx = -bx; by = -by; bz = -bz; bw = -bw;
++			d = -d;
++		}
++		if (1.0 - d > 0.0) {
++			f64 ac = acos(d);
++			f64 s = sin(ac);
++			sa = sin((1.0 - alpha) * ac) / s;
++			sb = sin(alpha * ac) / s;
++		} else {
++			sa = 1.0 - alpha;
++			sb = alpha;
++		}
++		dest->x = (f32)(sa * a->x + sb * bx);
++		dest->y = (f32)(sa * a->y + sb * by);
++		dest->z = (f32)(sa * a->z + sb * bz);
++		dest->w = (f32)(sa * a->w + sb * bw);
++		return;
++	}
++#endif
+ 	f32 mag = a->x * a->x + a->y * a->y + a->z * a->z + a->w * a->w;
+ 	f32 x = b->x;
+ 	f32 y = b->y;
+diff --git a/src/numath/nurand.h b/src/numath/nurand.h
+index 2b56b2e..123cfbc 100644
+--- a/src/numath/nurand.h
++++ b/src/numath/nurand.h
+@@ -7,7 +7,11 @@
+ extern u32 fseed;
+ 
+ // Current random number.
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern struct nunrand_s global_rand;
++#else
+ static struct nunrand_s global_rand;
++#endif
+ 
+ // Get a random number.
+ long NuRand(struct nunrand_s* rand);
+diff --git a/src/numath/nuvec.c b/src/numath/nuvec.c
+index 791dddd..d3b07f1 100644
+--- a/src/numath/nuvec.c
++++ b/src/numath/nuvec.c
+@@ -4,6 +4,14 @@
+ 
+ void NuVecMtxTransform(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ {
++#ifdef PORT
++	/* the original reads all of a before storing: dest may alias a */
++	f32 x = a->x, y = a->y, z = a->z;
++	dest->x = x * b->m11 + y * b->m21 + z * b->m31 + b->m41;
++	dest->y = x * b->m12 + y * b->m22 + z * b->m32 + b->m42;
++	dest->z = x * b->m13 + y * b->m23 + z * b->m33 + b->m43;
++	return;
++#endif
+ 	dest->x = a->x * b->m11 + a->y * b->m21 + a->z * b->m31 + b->m41;
+ 	dest->y = a->x * b->m12 + a->y * b->m22 + a->z * b->m32 + b->m42;
+ 	dest->z = a->x * b->m13 + a->y * b->m23 + a->z * b->m33 + b->m43;
+@@ -11,6 +19,19 @@ void NuVecMtxTransform(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ 
+ void NuVecMtxTransformH(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ {
++#ifdef PORT
++	{
++		/* the original (800C143C) divides by w = a.b column 4, not by a->y,
++		   and reads all of a before storing */
++		f32 x = a->x, y = a->y, z = a->z;
++		f32 w = z * b->m34 + (x * b->m14 + y * b->m24) + b->m44;
++		f32 sc = (w == 0.0f) ? 0.0f : 1.0f / w;
++		dest->x = (x * b->m11 + y * b->m21 + z * b->m31 + b->m41) * sc;
++		dest->y = (x * b->m12 + y * b->m22 + z * b->m32 + b->m42) * sc;
++		dest->z = (x * b->m13 + y * b->m23 + z * b->m33 + b->m43) * sc;
++		return;
++	}
++#endif
+ 	f32 scale = 0.0;
+ 	f32 tmp = a->z * b->m34 + a->x * b->m14 + a->y * b->m24 + b->m44;
+ 	if (a->y != 0.0) {
+@@ -23,6 +44,13 @@ void NuVecMtxTransformH(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ 
+ void NuVecMtxRotate(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ {
++#ifdef PORT
++	f32 x = a->x, y = a->y, z = a->z; /* dest may alias a */
++	dest->x = x * b->m11 + y * b->m21 + z * b->m31;
++	dest->y = x * b->m12 + y * b->m22 + z * b->m32;
++	dest->z = x * b->m13 + y * b->m23 + z * b->m33;
++	return;
++#endif
+ 	dest->x = a->x * b->m11 + a->y * b->m21 + a->z * b->m31;
+ 	dest->y = a->x * b->m12 + a->y * b->m22 + a->z * b->m32;
+ 	dest->z = a->x * b->m13 + a->y * b->m23 + a->z * b->m33;
+@@ -40,6 +68,13 @@ void NuVecInvMtxTransform(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b
+ 
+ void NuVecInvMtxRotate(struct nuvec_s* dest, struct nuvec_s* a, struct Mtx* b)
+ {
++#ifdef PORT
++	f32 x = a->x, y = a->y, z = a->z; /* dest may alias a */
++	dest->x = x * b->m11 + y * b->m12 + z * b->m13;
++	dest->y = x * b->m21 + y * b->m22 + z * b->m23;
++	dest->z = x * b->m31 + y * b->m32 + z * b->m33;
++	return;
++#endif
+ 	dest->x = a->x * b->m11 + a->y * b->m12 + a->z * b->m13;
+ 	dest->y = a->x * b->m21 + a->y * b->m22 + a->z * b->m23;
+ 	dest->z = a->x * b->m31 + a->y * b->m32 + a->z * b->m33;
+@@ -87,9 +122,17 @@ void NuVecAdd(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b)
+ 
+ void NuVecSub(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b)
+ {
++#ifdef PORT
++	/* the original asm (800C1770) uses fsubs; the decomp's '+' broke
++	   crate collisions (CrateCollisions vNew) and anything else using it */
++	dest->x = a->x - b->x;
++	dest->y = a->y - b->y;
++	dest->z = a->z - b->z;
++#else
+ 	dest->x = a->x + b->x;
+ 	dest->y = a->y + b->y;
+ 	dest->z = a->z + b->z;
++#endif
+ }
+ 
+ void NuVecScale(f32 scale, struct nuvec_s* dest, struct nuvec_s* v)
+@@ -108,6 +151,14 @@ void NuVecScaleAccum(f32 scale, struct nuvec_s* dest, struct nuvec_s* v)
+ 
+ void NuVecCross(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b)
+ {
++#ifdef PORT
++	/* the original loads a and b first: dest may alias either */
++	f32 ax = a->x, ay = a->y, az = a->z, bx = b->x, by = b->y, bz = b->z;
++	dest->x = ay * bz - az * by;
++	dest->y = az * bx - ax * bz;
++	dest->z = ax * by - ay * bx;
++	return;
++#endif
+ 	dest->x = a->y * b->z - a->z * b->y;
+ 	dest->y = a->z * b->x - a->x * b->z;
+ 	dest->z = a->x * b->y - a->y * b->x;
+@@ -147,6 +198,9 @@ float NuVecNorm(struct nuvec_s* dest, struct nuvec_s* v)
+ 	dest->x = x;
+ 	dest->y = y;
+ 	dest->z = z;
++#ifdef PORT
++	return mag; /* the original returns the magnitude in f1 */
++#endif
+ }
+ 
+ f32 NuVecDist(struct nuvec_s* a, struct nuvec_s* b, struct nuvec_s* dist)
+diff --git a/src/nuraster/dxframe.c b/src/nuraster/dxframe.c
+index 74a2fd3..2dede18 100644
+--- a/src/nuraster/dxframe.c
++++ b/src/nuraster/dxframe.c
+@@ -3,11 +3,19 @@
+ #include <string.h>
+ 
+ // If the backbuffer has been grabbed this frame.
++#ifdef PORT
++extern s32 backbuffer_grabbed_this_frame; /* defined in numtl.c */
++#else
+ s32 backbuffer_grabbed_this_frame = 0;
++#endif
+ int iss3cmp;
+ 
+ // Back buffer TID.
++#ifdef PORT
++s32 backbuffer_tid = 0x270F; /* DOL value (nutex.s); 0x207F was a typo */
++#else
+ s32 backbuffer_tid = 0x207F;
++#endif
+ 
+ void ResetFwGlobals()
+ {
+@@ -70,7 +78,7 @@ void NudxFw_MakeBackBufferCopy(s32 force)
+ {
+ 	if ((backbuffer_grabbed_this_frame == 0) || (force != 0))
+ 	{
+-		//GS_CopyTextureFromFB(); This is a stub function. Is it supposed to do something?
++		GS_CopyTextureFromFB(); /* empty in the original too, kept for parity with the DOL */
+ 		NudxFw_SetBackBufferCopied(1);
+ 	}
+ 	return;
+@@ -117,7 +125,7 @@ s32 NudxFw_BeginScene(s32 hRT)
+   if ((hRT + -1 != g_dwCurrentRT) || (hRT != -1)) {
+     SetRenderTarget(hRT);
+   }
+-  //GS_BeginScene();
++  GS_BeginScene();
+   return 0;
+ }
+ 
+@@ -130,7 +138,7 @@ s32 SetRenderTarget(u32 hRT)
+ s32 NudxFw_Clear(s32 flags,s32 colour,float depth)
+ 
+ {
+-  //GS_RenderClear(flags,colour,depth,0);
++  GS_RenderClear(flags,colour,depth,0);
+   return 0;
+ }
+ 
+@@ -150,13 +158,13 @@ int NudxFw_FlipScreen(int hRT,int ss)
+ s32 NudxFw_SetRenderState(enum _D3DRENDERSTATETYPE state, u32 data)
+ 
+ {
+-  //GS_SetRenderState(state,data);	//Empty function
++  GS_SetRenderState(state,data);	//Empty function
+   return 0;
+ }
+ 
+ s32 NudxFw_SetTextureState(u32 stage, enum _D3DTEXTURESTAGESTATETYPE state, u32 data)
+ {
+-  //GS_SetTextureStageState(); //Empty function
++  GS_SetTextureStageState(); //Empty function
+   return 0;
+ }
+ 
+@@ -226,11 +234,11 @@ s32 CreateDirect3D(struct HWND__ *hwnd)
+   struct _GS_VIEWPORT gsvp;
+   struct _D3DVIEWPORT8 vp;
+ 
+-  //GS_RenderClear(1,0,1.0,0);
+-  //GS_RenderClear(2,0,1.0,0);
+-  //GS_RenderClear(0xf0,0,0.0,0);
++  GS_RenderClear(1,0,1.0,0);
++  GS_RenderClear(2,0,1.0,0);
++  GS_RenderClear(0xf0,0,0.0,0);
+   GS_FlipScreen();
+-  //GS_RenderClear(0xf0,0,0.0,0);
++  GS_RenderClear(0xf0,0,0.0,0);
+   GS_FlipScreen();
+   memset(&vp,0,0x18);
+   vp.Height = 0x1c0;
+@@ -242,6 +250,6 @@ s32 CreateDirect3D(struct HWND__ *hwnd)
+   gsvp.height = 0x1c0;
+   gsvp.MaxZ = 1.0;
+   gsvp.MinZ = vp.MinZ;
+-  //GS_SetViewport(&gsvp);
++  GS_SetViewport(&gsvp);
+   return 0;
+ }
+diff --git a/src/nusound/sfx.c b/src/nusound/sfx.c
+index b083bf8..a8e0e98 100644
+--- a/src/nusound/sfx.c
++++ b/src/nusound/sfx.c
+@@ -548,7 +548,7 @@ do_fade:
+ 
+     if (ChaseActive() != -1) goto fade_50;
+     if (Level == 0x17) goto fade_50;
+-    if (LBIT & 0x03E00000ULL) goto fade_25;
++    if (PORT_W64(LBIT) & 0x03E00000ULL) goto fade_25;
+     if (Level == 9) goto fade_50;
+     if (Level == 3) goto fade_50;
+     goto check_vehicle;
+diff --git a/src/nuxbox/dummyfunc.c b/src/nuxbox/dummyfunc.c
+index 18d4ff2..1407e55 100644
+--- a/src/nuxbox/dummyfunc.c
++++ b/src/nuxbox/dummyfunc.c
+@@ -4,6 +4,13 @@
+ #include "gamelib/gcutscn.h"
+ #include "gamelib/debris.h"
+ #include "numath/nutrig.h"
++#ifdef PORT
++/* float arguments: must be prototyped for ARM/x86 calling conventions */
++struct nuanimdata_s; struct nuanimdata2_s; struct nuanimtime_s;
++void NuAnimDataCalcTime(struct nuanimdata_s *animdata, float time, struct nuanimtime_s *atime);
++void NuAnimData2CalcTime(struct nuanimdata2_s *animdata, float time, struct nuanimtime_s *atime);
++#endif
++
+ 
+ #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+ #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+@@ -144,7 +151,11 @@ s32 NuRndrGScnObj(struct nugobj_s *gobj,struct numtx_s *wm) {
+   return NuRndrGobj(gobj,wm,NULL);
+ }
+ 
+-static s32* ps2_scratch_free;	// --> point to PS2_SCRATCH_BASE
++#ifdef PORT /* initialised in the DOL: provided by port_dol_data.c */
++extern s32* ps2_scratch_free;
++#else
++static s32* ps2_scratch_free;
++#endif	// --> point to PS2_SCRATCH_BASE
+ unsigned char PS2_SCRATCH_BASE[16384];
+ 
+ //MATCH NGC
+@@ -159,7 +170,11 @@ s32 addrAligned;
+ 
+     ps2_scratch_free = (s32 *)(addrAligned + sizeAligned);
+     *(s32 *)(addrAligned + sizeAligned) = old;
++#ifdef PORT
++    ps2_scratch_free = (s32 *)((char *)ps2_scratch_free + 4); /* DOL: addi r9, r9, 0x4 */
++#else
+     ps2_scratch_free += 4;
++#endif
+     return (void *)addrAligned;
+ }
+ 
+@@ -1435,8 +1450,16 @@ static s32 XboxEffectSystemInitialised;
+ void InitXboxEffectSystem(s32 Level)
+ {
+   if (XboxEffectSystemInitialised == 0) {
++#ifdef PORT
++    /* the DOL calls both (InitXboxEffectSystem @ 0x800C595C); without them the
++     * caustic textures, the per-level default shader and the haze materials never exist */
++    extern void InitialiseShaders(s32 Level); extern void NuHazeInit(void);
++    InitialiseShaders(Level);
++    NuHazeInit();
++#else
+     //InitialiseShaders();
+     //NuHazeInit();
++#endif
+     NuWaterInit();
+     NuGlassInit();
+     XboxEffectSystemInitialised = 1;
+@@ -1456,8 +1479,14 @@ void InitXboxGSceneEffects(struct nugscn_s *gsc,union variptr_u *buffer,union va
+ void CloseXboxEffectSystem(void)
+ {
+   if (XboxEffectSystemInitialised != 0) {
++#ifdef PORT
++    extern void CloseShaders(void); extern void NuHazeClose(void);
++    CloseShaders();
++    NuHazeClose();
++#else
+     //CloseShaders();
+     //NuHazeClose();
++#endif
+     NuWaterClose();
+     NuGlassClose();
+     XboxEffectSystemInitialised = 0;
+diff --git a/src/system/crashlib.c b/src/system/crashlib.c
+index a44697f..f069460 100644
+--- a/src/system/crashlib.c
++++ b/src/system/crashlib.c
+@@ -16,20 +16,34 @@ struct nuvec_s* edmainQueryLocVec(void) {
+ }
+ 
+ //MATCH GCN
++#ifndef PORT /* duplicate of the DOL-backed definition in another unit */
+ unsigned long timeGetTime(void) {
+ 	return 0;
+     //return OSGetTick(); //SDK GCN
+ }
++#endif
+ 
+ //MATCH GCN
+ int tbsetCreate(int* cols) {
+     return 0;
+ }
+ 
++#ifdef PORT
++/* the game's timing bars feed the port's per-phase profile (port_video.c) */
++extern unsigned long long port_prof_now(void);
++unsigned long long port_tb_us[40];
++unsigned int port_tb_n[40];
++static unsigned long long port_tb_t0[40];
++#endif
++
+ //MATCH GCN
+ void tbslotBegin(int tbh, int slotix) {
+     unsigned long time;
+ 
++#ifdef PORT
++    if ((unsigned)slotix < 40) port_tb_t0[slotix] = port_prof_now();
++    return;
++#endif
+     time = timeGetTime();
+     timers[slotix].start = time;
+ }
+@@ -40,6 +54,13 @@ void tbslotEnd(int tbh, int slotix) {
+     unsigned long time;
+     unsigned long elapsed;
+ 
++#ifdef PORT
++    if ((unsigned)slotix < 40) {
++        port_tb_us[slotix] += port_prof_now() - port_tb_t0[slotix];
++        port_tb_n[slotix]++;
++    }
++    return;
++#endif
+     time = timeGetTime();
+     avg = timers[slotix].average;
+     elapsed = time - timers[slotix].start;
+@@ -51,6 +72,9 @@ void tbslotEnd(int tbh, int slotix) {
+ //MATCH GCN
+ void DBTimerStart(int index) {
+     unsigned long time;
++#ifdef PORT
++    return; /* debug timers only: reading the clock is a syscall on Vita */
++#endif
+ 
+     time = timeGetTime();
+     DBTimers[index].start = time;
+@@ -62,6 +86,9 @@ void DBTimerEnd(int index) {
+     unsigned long avg;
+     unsigned long time;
+     unsigned long elapsed;
++#ifdef PORT
++    return;
++#endif
+ 
+     time = timeGetTime();
+     avg = DBTimers[index].average;
+@@ -165,10 +192,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
+                 *outbits = data2;
+                 inbits16++;
+                 inbits8 = (unsigned char*)outbits;
++#ifdef PORT /* GS_TexCreateNU reads these as u32 values: swap value bytes 0 and 2
++             (what swapping memory bytes 1 and 3 does on big-endian) */
++                ix = inbits8[0];
++                data2 = inbits8[2];
++                inbits8[2] = ix;
++                inbits8[0] = data2;
++#else
+                 ix = inbits8[1];
+                 data2 = inbits8[3];
+                 inbits8[3] = ix;
+                 inbits8[1] = data2;
++#endif
+                 outbits++;
+             }
+             outline += width;
+@@ -187,10 +222,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
+                 data += 0xff000000;
+                 *outbits = data;
+                 inbits8 = (unsigned char*)outbits;
++#ifdef PORT /* GS_TexCreateNU reads these as u32 values: swap value bytes 0 and 2
++             (what swapping memory bytes 1 and 3 does on big-endian) */
++                ix = inbits8[0];
++                data2 = inbits8[2];
++                inbits8[2] = ix;
++                inbits8[0] = data2;
++#else
+                 ix = inbits8[1];
+                 data2 = inbits8[3];
+                 inbits8[3] = ix;
+                 inbits8[1] = data2;
++#endif
+                 outbits++;
+             }
+             outline += width;
+diff --git a/src/system/gc/stats.c b/src/system/gc/stats.c
+index dd8792b..d3ea6df 100644
+--- a/src/system/gc/stats.c
++++ b/src/system/gc/stats.c
+@@ -80,5 +80,9 @@ double TimerGetFPS(void)
+         frame_2++;
+     }
+ 
++#ifdef PORT
++    { extern double port_frame_pacer(double measured_fps); return port_frame_pacer(nFPS); }
++#else
+     return nFPS;
++#endif
+ }
+diff --git a/src/system/gs/gs.c b/src/system/gs/gs.c
+index 8a24380..0c419a1 100644
+--- a/src/system/gs/gs.c
++++ b/src/system/gs/gs.c
+@@ -21,6 +21,18 @@
+ #ifndef GX_FOG_LIN
+ #define GX_FOG_LIN 2
+ #endif
++#ifndef GX_BM_NONE
++#define GX_BM_NONE 0
++#define GX_BM_BLEND 1
++#endif
++#ifndef GX_BL_ZERO
++#define GX_BL_ZERO 0
++#define GX_BL_ONE 1
++#define GX_BL_SRCCLR 2
++#endif
++#ifndef GX_LO_COPY
++#define GX_LO_COPY 3
++#endif
+ #ifndef GX_PERSPECTIVE
+ #define GX_PERSPECTIVE 0
+ #endif
+@@ -138,7 +150,7 @@ void GS_BeginScene(void) {
+ }
+ 
+ void GS_EndScene(void) {
+-  //DEMODoneRender();
++  DEMODoneRender();
+   return;
+ }
+ 
+@@ -154,9 +166,9 @@ s32 GS_Init(void) {
+   GXInvalidateTexAll();
+   GS_TexInit();
+   col = GS_BgColour;
+-  //GXSetCopyClear(&col,0xffffff); //-1
+-  //GXCopyDisp(DEMOGetCurrentBuffer(), 1);
+-  //rmp = DEMOGetRenderModeObj();
++  GXSetCopyClear(col,0xffffff);
++  GXCopyDisp(DEMOGetCurrentBuffer(), 1);
++  rmp = DEMOGetRenderModeObj();
+   GS_ScreenWidth = (int)rmp->fbWidth;
+   GS_ScreenHeight = (int)rmp->efbHeight;
+   GS_InitVertexDescriptors();
+@@ -167,8 +179,8 @@ s32 GS_Init(void) {
+   GS_FrameBufferCopyPause.width = 0x140;
+   GS_FrameBufferCopyPause.height = 0xe0;
+   GS_FrameBufferCopyPause.data = NULL;
+-  //CARDInit();
+-  //GBA_Init();
++  CARDInit();
++  GBA_Init();
+   GS_FrameBufferCopySize = GXGetTexBufferSize(GS_FrameBufferCopyPause.width,GS_FrameBufferCopyPause.height,4,0,0);
+   GS_FrameBufferCopyPause.data = (u8 *)malloc(GS_FrameBufferCopySize);
+   if (GS_FrameBufferCopyPause.data == NULL) {
+@@ -213,7 +225,7 @@ void GS_RenderClearBlack(void) {
+ 
+ //NGC MATCH
+ void GS_SetOrthMatrix(void) {
+-  //DEMOSetupScrnSpc(GS_ScreenWidth,GS_ScreenHeight,100.0f);
++  DEMOSetupScrnSpc(GS_ScreenWidth,GS_ScreenHeight,100.0f);
+   return;
+ }
+ 
+@@ -317,10 +329,18 @@ void GS_SetupFog(s32 type,float startz,float endz,u32 colour) {
+     float farz;
+     struct _GXColor fogcolour;
+ 
++#ifdef PORT
++    /* byte 0/3 of the big-endian word: use shifts on little-endian */
++    fogcolour.a = colour >> 24;
++    fogcolour.r = colour >> 16;
++    fogcolour.g = colour >> 8;
++    fogcolour.b = colour;
++#else
+     fogcolour.a = ((u8*)&colour)[0];
+     fogcolour.r = colour >> 16;
+     fogcolour.g = colour >> 8;
+     fogcolour.b = ((u8*)&colour)[3];
++#endif
+     
+     nearz = 0.3f;
+     farz = 1000.0f;
+@@ -338,7 +358,9 @@ void GS_SetRenderState(s32 state,s32 data) {
+ 
+ //NGC MATCH
+ void GS_SetZCompare(int enable,int upd,enum _GXCompare mode) {
++#ifndef PORT /* debug text nothing reads; thousands of sprintf calls per frame */
+   sprintf(GS_CommandBuffer,"ZCMP En %d Up %d Mo %d\n",enable,upd,mode);
++#endif
+   if (GS_ZCompareMode != mode) {
+     GS_ZCompareMode = mode;
+   }
+@@ -349,17 +371,19 @@ void GS_SetZCompare(int enable,int upd,enum _GXCompare mode) {
+     GS_ZCmpEnable = enable;
+   }
+   if (GS_Parallax != 0) {
+-    //GXSetZMode(0,GX_NEVER,0);
++    GXSetZMode(0,GX_NEVER,0);
+   }
+   else {
+-    //GXSetZMode(GS_ZCmpEnable,GS_ZCompareMode,GS_ZCmpUpdate);
++    GXSetZMode(GS_ZCmpEnable,GS_ZCompareMode,GS_ZCmpUpdate);
+   }
+   return;
+ }
+ 
+ //NGC MATCH
+ void GS_SetBlendSrc(s32 enable,s32 src,s32 dest) {
++#ifndef PORT /* debug text nothing reads; thousands of sprintf calls per frame */
+   sprintf(GS_CommandBuffer,"BLEND En %d Sr %d Ds %d\n",enable,src,dest);
++#endif
+   if (GS_BlendEnable != enable) {
+     GS_BlendEnable = enable;
+   }
+@@ -370,17 +394,17 @@ void GS_SetBlendSrc(s32 enable,s32 src,s32 dest) {
+     GS_BlendDest = dest;
+   }
+   if (GS_BlendEnable == 1) {
+-    //GXSetBlendMode(GX_BM_BLEND,GS_BlendSrc,GS_BlendDest,GX_LO_COPY);
++    GXSetBlendMode(GX_BM_BLEND,GS_BlendSrc,GS_BlendDest,GX_LO_COPY);
+   }
+   else {
+-    //GXSetBlendMode(GX_BM_NONE,GX_BL_ONE,GX_BL_ZERO,GX_LO_COPY);
++    GXSetBlendMode(GX_BM_NONE,GX_BL_ONE,GX_BL_ZERO,GX_LO_COPY);
+   }
+   return;
+ }
+ 
+ //NGC MATCH
+ void GS_SetBlendSrc2(s32 enable,s32 src,s32 dest) {
+-  //GXSetBlendMode(GX_BM_BLEND,GX_BL_SRCCLR,GX_BL_SRCCLR,GX_LO_COPY);
++  GXSetBlendMode(GX_BM_BLEND,GX_BL_SRCCLR,GX_BL_SRCCLR,GX_LO_COPY);
+   return;
+ }
+ 
+@@ -390,7 +414,12 @@ void GS_SetProjectionMatrix(struct _GSMATRIX *pMatrix) {
+     float mMtx[4][3]; // 0x48(r1)
+ 
+     memcpy(GS_MatProjection, pMatrix, sizeof(float[4][4]));
++#ifdef PORT /* widescreen mode: a wider horizontal field of view (port_video.c) */
++    { extern float port_wide_factor(void);
++    C_MTXPerspective((float **)pMtx,40.0f,1.428571f * port_wide_factor(),0.3f,1000.0f); }
++#else
+     C_MTXPerspective((float **)pMtx,40.0f,1.428571f,0.3f,1000.0f);
++#endif
+     GXSetProjection((float **)pMtx,GX_PERSPECTIVE);
+     return;
+ }
+diff --git a/src/system/gs/gs.h b/src/system/gs/gs.h
+index 955d883..593cfb6 100644
+--- a/src/system/gs/gs.h
++++ b/src/system/gs/gs.h
+@@ -333,7 +333,10 @@ struct _GS_FrameBufferCopy
+ struct _GS_FrameBufferCopy GS_FrameBufferCopyPause;
+ void* GS_FrameBufferCopydataptr;
+ u32 GS_FrameBufferCopySize;
+-static struct _GS_TEXTURE* GS_TexList;
++#ifndef PORT
++static
++#endif
++struct _GS_TEXTURE* GS_TexList;
+ static GXColor GS_BgColour;
+ struct _GXColor GS_BgColourBlack;
+ 
+diff --git a/src/system/gs/gsprim.c b/src/system/gs/gsprim.c
+index 3b0fdae..8f25b7e 100644
+--- a/src/system/gs/gsprim.c
++++ b/src/system/gs/gsprim.c
+@@ -36,6 +36,17 @@ u32 QuadListColour;
+ s32 ShadowColour;
+ 
+ 
++#ifdef PORT
++/* Native port: vertex data goes through the GX emulation layer (port/src/gx_gl.c)
++ * instead of the GameCube write-gather FIFO; inline writers for the hot loops. */
++#include "port_gx_inline.h"
++void port_gs_draw_indexed(int strips, const short *idx, u32 count, const void *verts, int constcol, u32 col);
++void port_gs_draw_tskin(const void *vertlist, int n, const void *srcverts, const short *idx);
++#define PORT_GS_COLOUR(constcol, col) do { constcol = 1; \
++    if (IsStencil != 0 || ShadowBodge != GX_TEVSTAGE0) col = (u32)ShadowColour; \
++    else if (GS_MaterialSourceEmissive != 0) constcol = 0; \
++    else col = GS_MaterialEmissiveColour(); } while (0)
++#else
+ static inline void GXPosition3f32(const f32 x, const f32 y, const f32 z)
+ {
+     GXFIFO.f32 = x;
+@@ -93,6 +104,8 @@ static inline void GXColor3f32(const f32 r, const f32 g, const f32 b) {
+     GXFIFO.u8 = (u8)(b * 255.0);
+ }
+ 
++#endif
++
+ static inline u32 GS_MaterialEmissiveColour(void) {
+     union {
+         struct _GXColor rgba;
+@@ -357,6 +370,16 @@ void GS_DrawIndexedTriStrip(u32 VertexCount,short *pIndexData,float *vertlist,s3
+         GXSetVtxDesc(GX_VA_CLR0,GX_DIRECT);
+         GXSetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+     }
++#ifdef PORT
++    {
++        int cc;
++        u32 col = 0;
++        PORT_GS_COLOUR(cc, col);
++        port_gs_draw_indexed(1, pIndexData, VertexCount, vertlist, cc, col);
++        DBTimerEnd(0x19);
++        return;
++    }
++#endif
+     for (i = VertexCount; i != 0; i--) {
+             GXBegin(GX_TRIANGLESTRIP,GX_VTXFMT2,*pIndexData);
+             for (j = *pIndexData++; j > 0; j--) {
+@@ -381,6 +404,16 @@ void GS_DrawIndexedTriList(u32 nverts,short *indexlist,float *vertlist,s32 strid
+         GXSetVtxDesc(GX_VA_CLR0,GX_DIRECT);
+         GXSetVtxDesc(GX_VA_TEX0,GX_DIRECT);
+     }
++#ifdef PORT
++    {
++        int cc;
++        u32 col = 0;
++        PORT_GS_COLOUR(cc, col);
++        port_gs_draw_indexed(0, indexlist, nverts, vertlist, cc, col);
++        DBTimerEnd(0x18);
++        return;
++    }
++#endif
+     GXBegin(GX_TRIANGLES,GX_VTXFMT2,nverts);
+ 
+     for (i = 0; i < nverts; i++) {
+@@ -492,6 +525,32 @@ void GS_SetQuadListRGBA(s32 r,s32 g,s32 b,s32 a) {
+ }
+ 
+ //NGC MATCH
++#ifdef PORT
++/* skinning.c fused path: the vertex description GS_DrawTriListTSkin sets; returns
++ * whether it is the lit path and the colour of the unlit (shadow) path */
++s32 port_gs_tskin_desc(u32 *constcol) {
++  if (GS_EnableLightingFlag != 0) {
++    if (GS_CurrentVertDesc != 0x82) {
++      GS_CurrentVertDesc = 0x82;
++      GXClearVtxDesc();
++      GXSetVtxDesc(GX_VA_POS,GX_DIRECT);
++      GXSetVtxDesc(GX_VA_NRM,GX_DIRECT);
++      GXSetVtxDesc(GX_VA_CLR0,GX_DIRECT);
++      GXSetVtxDesc(GX_VA_TEX0,GX_DIRECT);
++    }
++    return 1;
++  }
++  if (GS_CurrentVertDesc != 0x80) {
++    GS_CurrentVertDesc = 0x80;
++    GXClearVtxDesc();
++    GXSetVtxDesc(GX_VA_POS,GX_DIRECT);
++    GXSetVtxDesc(GX_VA_CLR0,GX_DIRECT);
++  }
++  *constcol = (u32)ShadowColour;
++  return 0;
++}
++#endif
++
+ void GS_DrawTriListTSkin(struct _GS_VERTEXNORM *vertlist,s32 nverts,struct _GS_VERTEXSKIN *srcverts,short *pIndexData) {
+   s32 i;
+ 
+@@ -507,6 +566,11 @@ void GS_DrawTriListTSkin(struct _GS_VERTEXNORM *vertlist,s32 nverts,struct _GS_V
+     }
+ //  GXSetArray(10,&srcverts->nx,0x38); //alpha version
+ //  GXSetArray(0xd,&srcverts->u,0x38); //alpha version
++#ifdef PORT
++    port_gs_draw_tskin(vertlist, nverts, srcverts, pIndexData);
++    DBTimerEnd(0x1a);
++    return;
++#endif
+     GXBegin(GX_TRIANGLES,GX_VTXFMT2,(u16)nverts);
+       for (i = 0; i < nverts; i++) {
+       GXPosition3f32(vertlist->x,vertlist->y,vertlist->z);
+diff --git a/src/system/gs/gstex.c b/src/system/gs/gstex.c
+index 5dc1fb8..6281ae5 100644
+--- a/src/system/gs/gstex.c
++++ b/src/system/gs/gstex.c
+@@ -21,16 +21,23 @@ void GXSetNumTevStages(unsigned char nStages);
+ void GXSetTevOrder(enum _GXTevStageID stage, enum _GXTexCoordID coord, enum _GXTexMapID map, enum _GXChannelID color);
+ void GXSetTevOp(enum _GXTevStageID id, int mode);
+ void GXSetTevColorIn(GXTevStageID stage, GXTevColorArg a, GXTevColorArg b, GXTevColorArg c, GXTevColorArg d);
++void GXSetTevAlphaIn(GXTevStageID stage, int a, int b, int c, int d);
+ void GXSetTevColorOp(int stage, int tevop, int tevbias, int tevscale, int clamp, int regid);
+ void GXSetTevAlphaOp(int stage, int tevop, int tevbias, int tevscale, int clamp, int regid);
+ void GXSetTexCoordGen2(int dst_coord, int func, int src_param, int mtx, int normalize, int postmtx);
+ 
+ static unsigned int GS_TexInitFlag;
+ unsigned int GS_TexAllocs;
+-static unsigned int GS_NumTextures;
++#ifndef PORT
++static
++#endif
++unsigned int GS_NumTextures;
+ s32 TexStages[4];
+ s32 iss3cmp;
+-static struct _GS_TEXTURE* GS_TexList;
++#ifndef PORT
++static
++#endif
++struct _GS_TEXTURE* GS_TexList;
+ enum _GXTexWrapMode GS_TexWrapMode_t [4];
+ enum _GXTexWrapMode GS_TexWrapMode_s [4];
+ s32 ShadowBodge = GX_TEVSTAGE0;
+@@ -155,6 +162,16 @@ void GS_TexSwizzleRGB5A3(s32 nWidth,s32 nHeight,s32 *TxtBuf,char *DstBuf) {
+     return;
+ }
+ 
++#ifdef PORT
++static void *port_cmpr_alloc(u32 size, u32 w, u32 h) {
++    void *malloc(); void *memset();
++    u32 need = ((w + 7) / 8) * ((h + 7) / 8) * 32;
++    char *p = (char *)malloc(need > size ? need : size);
++    if (p != NULL && need > size)
++        memset(p + size, 0, need - size);
++    return p;
++}
++#endif
+ //NGC MATCH
+ void GS_TexCreateNU(enum nutextype_e Format,u32 width,u32 height,u8 *bits,u32 MipLevels,u32 RTFlag, s32 theirid) {
+     void *malloc();
+@@ -164,7 +181,11 @@ void GS_TexCreateNU(enum nutextype_e Format,u32 width,u32 height,u8 *bits,u32 Mi
+ 
+     pTex = GS_TexList;
+     if (iss3cmp != 0) {
++#ifdef PORT /* GX reads whole 8x8 CMPR tiles: never less than w x h needs */
++        newbits = (char *)port_cmpr_alloc(iss3cmp, width, height);
++#else
+         newbits = (char *)malloc(iss3cmp);
++#endif
+         GS_TexAllocs = GS_TexAllocs + iss3cmp;
+         memcpy(newbits,(char *)(bits + 0xc),iss3cmp);
+         DCFlushRange(newbits,iss3cmp);
+@@ -182,7 +203,11 @@ void GS_TexCreateNU(enum nutextype_e Format,u32 width,u32 height,u8 *bits,u32 Mi
+             }
+         }
+     } else if (Format == 0x80) {
++#ifdef PORT /* GX reads whole 8x8 CMPR tiles: never less than w x h needs */
++        newbits = (char *)port_cmpr_alloc(MipLevels, width, height);
++#else
+         newbits = (char *)malloc(MipLevels);
++#endif
+         GS_TexAllocs = GS_TexAllocs + MipLevels;
+         memcpy(newbits,bits,MipLevels);
+         DCFlushRange(newbits,MipLevels);
+@@ -296,6 +321,7 @@ void DCFlushRange(s32 arg0, u32 arg1) {
+ 
+ */
+ 
++#ifndef PORT /* the native port provides GXInitTexObj in port/src/gx_gl.c */
+ void GXInitTexObj(struct _GXTexObj * obj, void* image_ptr, u16 width, u16 height, enum _GXTexFmt texFormat, enum _GXTexWrapMode wrapModeS, enum _GXTexWrapMode wrapModeT, char mipmap)
+ {
+    return;
+@@ -380,6 +406,7 @@ switchD_800fa714_caseD_7:
+   return;
+    */
+ }
++#endif
+ 
+ //MATCH NGC
+ void GS_ChangeTextureStates(int id) {
+@@ -466,7 +493,11 @@ void GS_TexSelect(enum _GXTevStageID stage,s32 NUID) {
+     if (stage == GX_TEVSTAGE0) {
+       iVar1 = 5;
+     }
++#ifdef PORT
++    GXSetTevAlphaIn(stage,7,4,iVar1,7); /* the DOL calls GXSetTevAlphaIn here */
++#else
+     GXSetTevColorIn(stage,7,4,iVar1,7);
++#endif
+     GXSetTevAlphaOp(stage,0,0,0,1,0);
+     if (NUID - 0x270eU > 1) {
+     NUID--;
+diff --git a/src/system/port.c b/src/system/port.c
+index 8547093..b9cb0ad 100644
+--- a/src/system/port.c
++++ b/src/system/port.c
+@@ -337,6 +337,14 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+         return;
+     }
+     shader = (enum shadertypes_e)geomitem->hShader;
++#ifdef PORT /* debug: CWOC_GXTRACE_SCOPE traces the forced (glass) shader draws */
++    {
++        extern void port_gx_trace_scope(int on);
++        static int want = -2;
++        if (want == -2) want = getenv("CWOC_GXTRACE_SHADER") ? atoi(getenv("CWOC_GXTRACE_SHADER")) : 0x80;
++        port_gx_trace_scope(shader == want);
++    }
++#endif
+     mtl = geomitem->geom->mtl;
+     vtxtype = geomitem->geom->vtxtype;
+     if (mtl != NULL) {
+@@ -539,7 +547,11 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+         case BLENDSKINGLASS2: // 18
+             CV_WORLDVIEWPROJ = *(struct _GSMATRIX*) &matViewProj;
+             CV_WORLDVIEW = *(struct _GSMATRIX*) &matWorld;
++#ifdef PORT /* CV_WORLDVIEWIT is a 3x4 matrix: copying 64 bytes ran into the next globals */
++            memcpy(&CV_WORLDVIEWIT, &invWorldView, sizeof(CV_WORLDVIEWIT));
++#else
+             memcpy(&CV_WORLDVIEWIT, &invWorldView, sizeof(struct _GSMATRIX));
++#endif
+             CV_CONSTANTS = *(struct _GS_VECTOR4*) makenuvec4(0.0f, 1.0f, 3.0f, 3.0f);
+             CV_SHADER_PARAMS = *(struct _GS_VECTOR4*)makenuvec4(0.2f, 0.8f, refract, 0.5f);
+             CV_SCREEN_PARAMS = *(struct _GS_VECTOR4*)makenuvec4(PHYSICAL_SCREEN_X - 1, PHYSICAL_SCREEN_Y - 1, 0.0f, 0.0f);
+diff --git a/src/system/port.h b/src/system/port.h
+index d9ebe23..fed1899 100644
+--- a/src/system/port.h
++++ b/src/system/port.h
+@@ -122,8 +122,13 @@ static struct numtx_s matWorldViewProj;
+ static struct numtx_s matViewProj;
+ static struct numtx_s invWorld;
+ static struct numtx_s invWorldView;
++#ifdef PORT /* one object, defined in gslight.c (a static per includer broke lighting) */
++extern struct _GSMATRIX GS_LightViewMat;
++extern struct _GSMATRIX GS_LightMat;
++#else
+ static struct _GSMATRIX GS_LightViewMat;
+ static struct _GSMATRIX GS_LightMat;
++#endif
+ static float refract;
+ 
+ #endif // !PORT_H
+diff --git a/src/system/skinning.c b/src/system/skinning.c
+index 53cf2a5..a2a4b03 100644
+--- a/src/system/skinning.c
++++ b/src/system/skinning.c
+@@ -19,6 +19,22 @@ void SkinnedShader(int VertexCount,short *pIndexData)
+     short *IndexPtr;
+     int i;
+     struct _GS_VERTEXNORM *outputvert;
++#ifdef PORT
++    extern int port_gs_skin_fused(void);
++    /* fused skin + transform, one per referenced vertex (gx_gl.c) */
++    if (port_gs_skin_fused()) {
++        extern s32 port_gs_tskin_desc(u32 *constcol);
++        u32 shadowcol = 0;
++        s32 lit = port_gs_tskin_desc(&shadowcol);
++        extern void port_gs_skin_draw(int n, const short *idx, const void *srcverts, const void *blendsrc,
++                                      const float *skinmtx, float one, int lit, u32 constcol);
++        if (VertexCount > MaxSkinVerts) MaxSkinVerts = VertexCount;
++        SkinLights = 1;
++        port_gs_skin_draw(VertexCount, pIndexData, GS_SkinVertexSource, NULL, (const float *)CV_SKINMTX, c_one, lit, shadowcol);
++        SkinLights = 0;
++        return;
++    }
++#endif
+ 
+     outputvert = (struct _GS_VERTEXNORM *)TVertices;
+     DBTimerStart(0x1b);
+@@ -55,6 +71,22 @@ void SkinnedShaderBlend(int param_1,short *param_2)
+   short *IndexPtr;
+   int i;
+   struct _GS_VERTEXNORM* outputvert;
++#ifdef PORT
++    extern int port_gs_skin_fused(void);
++    /* fused skin + transform, one per referenced vertex (gx_gl.c) */
++    if (port_gs_skin_fused()) {
++        extern s32 port_gs_tskin_desc(u32 *constcol);
++        u32 shadowcol = 0;
++        s32 lit = port_gs_tskin_desc(&shadowcol);
++        extern void port_gs_skin_draw(int n, const short *idx, const void *srcverts, const void *blendsrc,
++                                      const float *skinmtx, float one, int lit, u32 constcol);
++        if (param_1 > MaxSkinVerts) MaxSkinVerts = param_1;
++        SkinLights = 1;
++        port_gs_skin_draw(param_1, param_2, GS_SkinVertexSource, GS_BlendSource, (const float *)CV_SKINMTX, c_one, lit, shadowcol);
++        SkinLights = 0;
++        return;
++    }
++#endif
+ 
+   outputvert = (struct _GS_VERTEXNORM*)TVertices;
+   DBTimerStart(0x1c);
+diff --git a/src/system/ss/ss.c b/src/system/ss/ss.c
+index b17ba94..68334cd 100644
+--- a/src/system/ss/ss.c
++++ b/src/system/ss/ss.c
+@@ -63,5 +63,12 @@ void SS_Update(int vol) {
+     }
+ 
+     DTKSetVolume(vol, vol);
++#ifdef PORT
++    /* On the GameCube the AX callback (ax_demo_callback) runs every 5 ms and frees
++     * voices that are stopped, including the one SS_PlaySFX leaves acquired but
++     * unstarted (sound not in the bank: no sound entry). Run it here too so
++     * SS_UpdateSFX never sees such an entry (it reads the NULL sound entry). */
++    { extern void port_audio_ax_callback(void); port_audio_ax_callback(); }
++#endif
+     SS_UpdateSFX();
+ }
+\ No newline at end of file
+diff --git a/src/system/ss/sssp.c b/src/system/ss/sssp.c
+index e907d3c..1e06be1 100644
+--- a/src/system/ss/sssp.c
++++ b/src/system/ss/sssp.c
+@@ -340,8 +340,13 @@ void SPPrepareEnd(SPSoundEntry *sound, AXVPB *axvpb) {
+     axvpb->pb.addr.loopFlag = 0;
+     sync = axvpb->sync;
+     sync |= 0xA000;
++#ifdef PORT /* halves of the u32 by value (the u16 view is big-endian only) */
++    axvpb->pb.addr.endAddressHi = (u16)(sound->endAddr >> 16);
++    axvpb->pb.addr.endAddressLo = (u16)sound->endAddr;
++#else
+     axvpb->pb.addr.endAddressHi = ((u16 *)&sound->endAddr)[0];
+     axvpb->pb.addr.endAddressLo = ((u16 *)&sound->endAddr)[1];
++#endif
+     axvpb->sync = sync;
+     OSRestoreInterrupts(old);
+ }
+diff --git a/src/types.h b/src/types.h
+index 9e2ba25..0e6cd36 100644
+--- a/src/types.h
++++ b/src/types.h
+@@ -32,6 +32,14 @@ typedef signed int s32;
+ 
+ // Unsigned  double word.
+ typedef unsigned long long u64;
++/* 64-bit game values (LBIT, *.levbits, gate_bits) are kept in PowerPC word
++ * order on the port so translated PPC code (two 32-bit loads) sees them right;
++ * native C reads/writes them through PORT_W64 (a 32-bit word swap). */
++#ifdef PORT
++#define PORT_W64(x) ((((u64)(x)) << 32) | (((u64)(x)) >> 32))
++#else
++#define PORT_W64(x) (x)
++#endif
+ 
+ // Signed double word.
+ typedef signed long long s64;
+@@ -135,10 +143,19 @@ struct nupad_s
+     unsigned int paddata; // Offset: 0xCC
+     unsigned int oldpaddata; // Offset: 0xD0
+     unsigned int paddata_db; // Offset: 0xD4
++#ifdef PORT
++/* bitfields declared in reverse so a little-endian unit holds the same value as on GameCube */
++    int : 28; /* PORT: pad so the value matches the big-endian bit positions */
++    int deadzone : 1; // Offset: 0xD8, Bit Offset: 3, Bit Size: 1
++    int valid : 1; // Offset: 0xD8, Bit Offset: 2, Bit Size: 1
++    int analogue_buttons : 1; // Offset: 0xD8, Bit Offset: 1, Bit Size: 1
++    int analogue_sticks : 1; // Offset: 0xD8, Bit Offset: 0, Bit Size: 1
++#else
+     int analogue_sticks : 1; // Offset: 0xD8, Bit Offset: 0, Bit Size: 1
+     int analogue_buttons : 1; // Offset: 0xD8, Bit Offset: 1, Bit Size: 1
+     int valid : 1; // Offset: 0xD8, Bit Offset: 2, Bit Size: 1
+     int deadzone : 1; // Offset: 0xD8, Bit Offset: 3, Bit Size: 1
++#endif
+     unsigned int padvalue; // Offset: 0xDC
+     unsigned char ok; // Offset: 0xE0
+     unsigned char read_id; // Offset: 0xE1

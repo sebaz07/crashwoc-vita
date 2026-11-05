@@ -1,0 +1,10 @@
+# C types for DOL data objects that the C code only reaches through untyped
+# pointers (void * tables), so gen_dol_data.py cannot get their layout from
+# DWARF. Format: <regex matching the dtk object name>  <C type name>
+# The object is treated as an array of that type.
+GameCut_\w+                 struct pcutanm_s
+Space_\w+_PlayList          struct space_s
+
+# unterminated lists the original code reads past (into the next object)
+@follow CortexAnim
+@follow WeatherCrunchAnim

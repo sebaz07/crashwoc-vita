@@ -1,0 +1,13 @@
+# fetched / generated
+/decomp/
+/build*/
+/dist/
+*.vpk
+__pycache__/
+# never commit game data
+*.iso
+*.gcm
+*.ciso
+*.rvz
+*.dol
+crashwoc-vita-data/
