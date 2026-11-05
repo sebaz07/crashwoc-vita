@@ -152,7 +152,18 @@ void port_platform_init(int argc, char **argv) {
 uint64_t g_msub[8];
 static uint64_t g_msub_t0[8];
 static unsigned g_msub_c[8], g_msub_r[8];
+static int g_msub_on = -1;
 void port_msub_begin(int k, int rate) {
+    /* off by default (each sample is two timer syscalls on the Vita):
+     * CWOC_MSUB=1 on PC, or build with -DPORT_MSUB_DEFAULT=1 */
+    if (g_msub_on < 0) {
+#ifdef PORT_MSUB_DEFAULT
+        g_msub_on = PORT_MSUB_DEFAULT;
+#else
+        g_msub_on = getenv("CWOC_MSUB") != NULL;
+#endif
+    }
+    if (!g_msub_on) { g_msub_t0[k] = 0; return; }
     g_msub_r[k] = (unsigned)rate;
     g_msub_t0[k] = (++g_msub_c[k] % (unsigned)rate) == 0 ? port_prof_now() : 0;
 }
@@ -331,7 +342,7 @@ static void prof_report(int nf, uint64_t span) {
             }
             n += snprintf(buf + n, sizeof(buf) - n, " idxcache %u/%u", g_idxc_hit / (unsigned)nf, g_idxc_miss / (unsigned)nf);
             g_idxc_hit = g_idxc_miss = 0;
-            {
+            if (g_msub_on > 0) {
                 static const char *mn[8] = {"m3d", "mstate", "wmtx", "shsetup", "draw", "ot", "other", "item"};
                 n += snprintf(buf + n, sizeof(buf) - n, " | mtl:");
                 for (i = 0; i < 8; i++) {

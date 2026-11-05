@@ -3676,7 +3676,7 @@ index 61054f6..62a4d58 100644
      memset(&light[id],0,100);
      NuMtxSetIdentity((struct Mtx *)&light[id].light.mtx);
 diff --git a/src/nu3dx/numtl.c b/src/nu3dx/numtl.c
-index 9685b8c..25b1b21 100644
+index 9685b8c..a0ea23f 100644
 --- a/src/nu3dx/numtl.c
 +++ b/src/nu3dx/numtl.c
 @@ -200,6 +200,9 @@ struct numtl_s * NuMtlRead(s32 fh) {
@@ -3748,7 +3748,7 @@ index 9685b8c..25b1b21 100644
    return;
  }
  
-@@ -504,11 +528,15 @@ static void NuMtlRender3d(void) {
+@@ -504,11 +528,30 @@ static void NuMtlRender3d(void) {
    GS_SetAlphaCompare(7,0);
    for (sm = smlist; sm != NULL; sm = sm->next) {
      if (((sm->mtl).L == '\0') && (sm->rndrlist != NULL)) {
@@ -3758,6 +3758,21 @@ index 9685b8c..25b1b21 100644
        NuTexSetTextureStates(&sm->mtl);
 +      MSUB_E(1);
        for (ri = sm->rndrlist; ri != NULL; ri = ri->next) {
++#ifdef PORT
++        /* PORT: the item walk is memory-latency bound (the first touch of each
++         * item's geom costs most of SetupShaders on the Vita): start loading the
++         * next item's header and the following item's geom/matrix early */
++        {
++          struct nurndritem_s *nx = ri->next;
++          if (nx != NULL) {
++            if (nx->next != NULL) __builtin_prefetch(nx->next);
++            if (nx->type == NURNDRITEM_GEOM3D || nx->type == NURNDRITEM_SKIN3D2) {
++              __builtin_prefetch(((struct nugeomitem_s *)nx)->geom);
++              __builtin_prefetch(((struct nugeomitem_s *)nx)->mtx);
++            }
++          }
++        }
++#endif
 +        MSUB_B(7, 8);
          NuRndrItem(ri);
 +        MSUB_E(7);
