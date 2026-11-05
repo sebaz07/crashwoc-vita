@@ -16,6 +16,17 @@ int _newlib_heap_size_user = 128 * 1024 * 1024;
 unsigned int sceUserMainThreadStackSize = 4 * 1024 * 1024;
 #endif
 
+/* Camera far-clip cap per level (0 = keep the level's own value). Developer
+ * option: CWOC_FARCLIP=<units> caps every level, for measuring. */
+float port_farclip_cap(int level) {
+    const char *v = getenv("CWOC_FARCLIP");
+    if (v) return (float)atof(v);
+    switch (level) {
+    case 27: return 90.0f;  /* c\cast_bug: long corridor, nothing in view past it */
+    default: return 0.0f;
+    }
+}
+
 int cwoc_game_main(int argc, char **argv);
 void port_dol_data_init(void);
 

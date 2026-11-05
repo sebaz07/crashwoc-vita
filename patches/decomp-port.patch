@@ -489,7 +489,7 @@ index db17a61..f981979 100644
            (*GameCamera).mode = 0x10;
          }
 diff --git a/src/gamecode/chase.c b/src/gamecode/chase.c
-index cd4780c..d940a33 100644
+index cd4780c..c7dd148 100644
 --- a/src/gamecode/chase.c
 +++ b/src/gamecode/chase.c
 @@ -187,7 +187,9 @@ s32 NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm);
@@ -502,6 +502,27 @@ index cd4780c..d940a33 100644
  
  struct gdeb_s {
      s32 i;
+@@ -816,9 +818,20 @@ void UpdateCrateBallsOfFireDoors(void) {
+         if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x14, 0.5f) != 0) {
+             strcpy(txt, "00000000");
+         } else if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x21, 0.5f) != 0) {
++#ifdef PORT
++            /* PORT: the GameCube code picks "11110000" here (door1-4 = the open iris that closes
++             * behind Crash) and "00001111" below (door25-28 = the closed door the next fireball
++             * blows open); the decomp had them swapped, so a closed door hid Crash on approach */
++            strcpy(txt, "11110000");
++#else
+             strcpy(txt, "00001111");
++#endif
+         } else {
++#ifdef PORT
++            strcpy(txt, "00001111");
++#else
+             strcpy(txt, "11110000");
++#endif
+         }
+ 
+         for (i = 0; i < 8; i++) {
 diff --git a/src/gamecode/creature.c b/src/gamecode/creature.c
 index affc480..0f49a86 100644
 --- a/src/gamecode/creature.c
@@ -1429,7 +1450,7 @@ index 4577bcc..2bf5bdc 100644
  struct nuvec_s BaseWheelPosition[6];
  struct enemyjeep_s EnemyJeep[4];
 diff --git a/src/gamecode/main.c b/src/gamecode/main.c
-index d573907..4d84bc7 100644
+index d573907..ae66c7d 100644
 --- a/src/gamecode/main.c
 +++ b/src/gamecode/main.c
 @@ -1,5 +1,9 @@
@@ -1603,7 +1624,27 @@ index d573907..4d84bc7 100644
    if (pNuCam != NULL) {
      farclip = LDATA->farclip;
      if ((u32)farclip > 9) {
-@@ -1313,11 +1360,20 @@ s32 force_menu;
+@@ -865,6 +912,19 @@ void SetLevel(void) {
+     else {
+      pNuCam->farclip = 1000.0f;
+     }
++#ifdef PORT
++    {
++      /* PORT: the bonus castle (27 c\cast_bug) opens on a straight corridor with
++       * farclip 1000 and no fog: ~105k vertices a frame, 9 fps on the Vita.
++       * Geometry past ~120 units is other rooms hidden behind walls, so cap
++       * only the camera (LDATA->farclip still drives AI and crate ranges). */
++      extern float port_farclip_cap(int level);
++      float cap = port_farclip_cap(Level);
++      if ((cap > 0.0f) && (pNuCam->farclip > cap)) {
++        pNuCam->farclip = cap;
++      }
++    }
++#endif
+   }
+   AIVISRANGE = 25.0f;
+   return;
+@@ -1313,11 +1373,20 @@ s32 force_menu;
  s32 frameout;
  long frameout_count;
  s32 just_continued;
@@ -1627,7 +1668,7 @@ index d573907..4d84bc7 100644
  s32 GLASSPLAYER;
  s32 BLUR;
  s32 NODEBRIS;
-@@ -1460,6 +1516,9 @@ int main(s32 argc,char **argv) {
+@@ -1460,6 +1529,9 @@ int main(s32 argc,char **argv) {
    NuRndrInitEx(0x200000);
    NuLightInit();
    pNuCam = NuCameraCreate();
@@ -1637,7 +1678,7 @@ index d573907..4d84bc7 100644
    firstscreens();
    Pad[0] = NuPs2OpenPad(0,0);
    Pad[1] = NuPs2OpenPad(1,0);
-@@ -1483,6 +1542,9 @@ LAB_80051ba4:
+@@ -1483,6 +1555,9 @@ LAB_80051ba4:
      NewMenu(&Cursor,-1,-1,-1);
      Demo = 0;
      cutmovie = 0;
@@ -1647,7 +1688,7 @@ index d573907..4d84bc7 100644
      Level = 0x25;
    }
    SetLevel();
-@@ -1953,7 +2015,7 @@ LAB_80051ba4:
+@@ -1953,7 +2028,7 @@ LAB_80051ba4:
            if ((LDATA->flags & 1) != 0) {
              if (((((plr->used != 0) && (plr->obj.mask != NULL)) &&
                   (plr->obj.mask->active != 0)) && ((LDATA->flags & 0xe00) == 0)) &&
@@ -1656,7 +1697,7 @@ index d573907..4d84bc7 100644
                  ((Cursor.menu != 0x24 && (advice_wait == 0)))))) {
                DrawMask(plr->obj.mask);
              }
-@@ -1997,7 +2059,7 @@ LAB_80051ba4:
+@@ -1997,7 +2072,7 @@ LAB_80051ba4:
          tbslotEnd(app_tbset,0xe);
          tbslotBegin(app_tbset,2);
          NuRndrBeginScene(1);
@@ -1665,7 +1706,7 @@ index d573907..4d84bc7 100644
             ((Level == 7) && (player->obj.RPos.iALONG > 0x66) && (player->obj.RPos.iALONG < 0x92)))
          {
            if ((Level == 5) && (player->obj.RPos.iALONG > 0x6d) && (player->obj.RPos.iALONG < 0x79))
-@@ -2051,7 +2113,7 @@ LAB_80051ba4:
+@@ -2051,7 +2126,7 @@ LAB_80051ba4:
          }
          if ((((((LDATA->flags & 1) != 0) && (plr->used != 0)) && ((plr->obj.mask != NULL &&
                ((plr->obj.mask->active != 0 && ((LDATA->flags & 0xe00) == 0)))))) &&

@@ -2701,6 +2701,7 @@ typedef struct {
     u16 mn, range;
     u8 reject;
     u16 *rel;
+    u32 stamp; /* frame of the last hit: picks the victim of a 2-way set */
 } IdxCache;
 #define IDXC_N 16384
 static IdxCache g_idxc[IDXC_N];
@@ -2734,8 +2735,19 @@ static int draw_indexed_range(int strips, const short *idx, u32 count, const Por
     if (g_idxc_on < 0) g_idxc_on = getenv("CWOC_IDXCACHE") == NULL || getenv("CWOC_IDXCACHE")[0] != '0';
     if (g_idxc_on && g_rtcopy && count > 0) {
         u32 chk = idxc_sum(idx, count);
-        c = &g_idxc[(((uintptr_t)idx >> 1) ^ ((uintptr_t)idx >> 13)) % IDXC_N];
+        /* 2-way set, multiplicative hash: the old (idx>>1 ^ idx>>13) slot made
+         * lists in one level evict each other every frame (82 misses a frame
+         * at the start of the bonus castle, each a full rescan) */
+        u32 h = (u32)(((uintptr_t)idx >> 1) * 2654435761u) >> 18;
+        IdxCache *c0 = &g_idxc[h & ~1u], *c1 = c0 + 1;
+        u32 now = (u32)port_frame_count();
+        if (c1->idx == idx) c = c1;
+        else if (c0->idx == idx) c = c0;
+        else if (c0->idx == NULL) c = c0;
+        else if (c1->idx == NULL) c = c1;
+        else c = (c0->stamp <= c1->stamp) ? c0 : c1;
         if (c->idx == idx && c->count == count && c->strips == strips && c->chk == chk) {
+            c->stamp = now;
             if (c->reject) return 0;
             if (c->rel != NULL) {
                 const u16 *r = c->rel;
@@ -2781,6 +2793,7 @@ static int draw_indexed_range(int strips, const short *idx, u32 count, const Por
         c->strips = strips;
         c->chk = chk;
         c->reject = 0;
+        c->stamp = now;
     }
     while (left > 0) {
         int n;
