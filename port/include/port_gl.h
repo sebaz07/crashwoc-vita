@@ -23,6 +23,9 @@ void port_gx_flush(void);
 int port_gx_take_draw_calls(void);
 /* end of frame: queue the present (screenshot + swap run on the render thread) */
 void port_gx_present(int frame);
+/* PS Vita button icons of the frame being made (port_hud.c): handed to the
+ * render thread just before port_gx_present(frame) */
+void port_gx_icons_commit(int frame);
 void port_gx_finish(void);
 int port_gx_render_threaded(void);
 

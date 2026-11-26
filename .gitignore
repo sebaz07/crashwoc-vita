@@ -1,6 +1,7 @@
 # fetched / generated
 /decomp/
 /build*/
+/shader-seed/
 /dist/
 *.vpk
 __pycache__/
@@ -11,3 +12,4 @@ __pycache__/
 *.rvz
 *.dol
 crashwoc-vita-data/
+/gamefiles/

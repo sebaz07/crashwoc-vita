@@ -1,6 +1,8 @@
 /* Native port entry point: platform bring-up, then the game's own main(). */
 #include "port.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Developer option: CWOC_SKIP_LOGOS=1 skips the licence/publisher screens. */
 int port_skip_logos(void) {
@@ -9,11 +11,43 @@ int port_skip_logos(void) {
 }
 
 #ifdef PORT_VITA
+#include <psp2/kernel/threadmgr.h>
 #include <psp2/power.h>
 /* newlib heap for the game (GameCube had 24 MB; the port also keeps decoded
  * textures and translated-code stacks in main RAM). vitaGL uses CDRAM. */
 int _newlib_heap_size_user = 128 * 1024 * 1024;
 unsigned int sceUserMainThreadStackSize = 4 * 1024 * 1024;
+
+/* The Vita has no process environment, so the CWOC_* developer options
+ * (port/README.md) are read from ux0:data/crashwoc/env.txt when it exists:
+ * one KEY=VALUE per line, blank lines and '#' comments ignored. Without the
+ * file nothing changes. Loaded before the log opens; logged right after. */
+#define ENV_FILE "ux0:data/crashwoc/env.txt"
+#define ENV_MAX 32
+static char *g_env_lines[ENV_MAX];
+static int g_env_count;
+
+static void env_file_load(void) {
+    char line[1024];
+    FILE *f = fopen(ENV_FILE, "r");
+    if (!f) return;
+    while (fgets(line, sizeof(line), f)) {
+        char *key = line, *eq, *end = line + strlen(line);
+        while (end > line && (end[-1] == '\n' || end[-1] == '\r' || end[-1] == ' ' || end[-1] == '\t')) *--end = 0;
+        while (*key == ' ' || *key == '\t') key++;
+        if (!*key || *key == '#' || !(eq = strchr(key, '=')) || eq == key) continue;
+        *eq = 0;
+        setenv(key, eq + 1, 1);
+        *eq = '=';
+        if (g_env_count < ENV_MAX) g_env_lines[g_env_count++] = strdup(key);
+    }
+    fclose(f);
+}
+
+static void env_file_log(void) {
+    int i;
+    for (i = 0; i < g_env_count; i++) port_log("env: %s (" ENV_FILE ")", g_env_lines[i]);
+}
 #endif
 
 /* Camera far-clip cap per level (0 = keep the level's own value). Developer
@@ -53,6 +87,20 @@ const unsigned char port_vita_text_pad[PORT_VITA_TEXT_PAD] = {1};
 int main(int argc, char **argv) {
 #ifdef PORT_VITA
     (void)*(volatile const unsigned char *)port_vita_text_pad;
+    {
+        /* one-shot power off for unattended test sessions: the PC side
+         * (vita-agent-use) cannot turn the console off, so it uploads this
+         * file and starts the game, which removes it and puts the Vita in
+         * standby. Removed first, so a failed request never repeats. */
+        FILE *sf = fopen("ux0:data/crashwoc/standby.flag", "rb");
+        if (sf) {
+            fclose(sf);
+            remove("ux0:data/crashwoc/standby.flag");
+            scePowerRequestStandby();
+            sceKernelDelayThread(10 * 1000 * 1000);
+        }
+    }
+    env_file_load();
     /* run at the highest standard clocks (default ARM clock is 333 MHz) */
     scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);
@@ -61,6 +109,9 @@ int main(int argc, char **argv) {
 #endif
     port_log_init();
     port_log("Crash WOC native port starting");
+#ifdef PORT_VITA
+    env_file_log();
+#endif
     {
         extern void port_splash_show(void);
         port_splash_show(); /* Vita: boot image while the port starts */
@@ -84,6 +135,10 @@ int main(int argc, char **argv) {
     }
 #endif
     port_dol_data_init();
+    {
+        extern void port_hud_init(void); /* texts for the PS Vita buttons */
+        port_hud_init();
+    }
     port_platform_init(argc, argv);
     {
         extern void port_audio_init(void);

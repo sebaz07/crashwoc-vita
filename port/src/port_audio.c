@@ -491,6 +491,7 @@ static void mix(s16 *out, int frames) {
 
 static void SDLCALL audio_cb(void *ud, Uint8 *stream, int len) {
     (void)ud;
+    { extern void port_thread_register(const char *name); static int reg; if (!reg) { reg = 1; port_thread_register("audio"); } }
 #ifdef PORT_VITA
     { /* SDL's audio thread inherits the game thread's core 0: move it to core 2 */
         static int pinned;

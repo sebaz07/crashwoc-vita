@@ -257,7 +257,15 @@ BRCOND = {  # mnemonic stem -> (bit-in-field, value)
 HOOKS = {"firstscreens": "port_hook_firstscreens", "PlayCutMovie": "port_hook_PlayCutMovie",
          "LoadIconC8": "port_hook_LoadIconC8",
          "NuHGobjRndrMtxDwa": "port_hook_NuHGobjRndrMtxDwa",
-         "LoadBuggyData": "port_hook_LoadBuggyData"}
+         "LoadBuggyData": "port_hook_LoadBuggyData",
+         "DrawMenuEntry": "port_hook_DrawMenuEntry", "ProcMenu": "port_hook_ProcMenu",
+         # HUD (src/game/port_hud.c): fps counter, widescreen pause screen, PS Vita buttons
+         "DrawPanel": "port_hook_DrawPanel", "DrawMenu": "port_hook_DrawMenu",
+         "Text3D": "port_hook_Text3D", "Text3D2": "port_hook_Text3D2",
+         "DrawPanel3DObject": "port_hook_DrawPanel3DObject",
+         "DrawPanel3DCharacter": "port_hook_DrawPanel3DCharacter",
+         "BigOutOf": "port_hook_BigOutOf", "DrawTimeTrialTimes": "port_hook_DrawTimeTrialTimes",
+         "DrawMenuEntry2": "port_hook_DrawMenuEntry2"}
 # Native names of translated functions that the port renames (main.c is built with -Dmain=cwoc_game_main)
 RENAME = {"main": "cwoc_game_main"}
 # lwz that reads two adjacent u16 fields of a native (little-endian) struct as

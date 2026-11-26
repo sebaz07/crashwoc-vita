@@ -64,6 +64,11 @@ list(FILTER SYS_PRELUDE_SOURCES INCLUDE REGEX "/(system|nucore|numath|nuraster|n
 set_source_files_properties(${SYS_PRELUDE_SOURCES} PROPERTIES COMPILE_DEFINITIONS PORT_SYS_PRELUDE=1)
 
 file(GLOB PORT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
+# GPU profiler capture (port_gpuprof.c): only in a -DCWOC_GPUPROF=ON build
+option(CWOC_GPUPROF "Vita: build the psp2-cex-gpues4-prof capture in (measurement build)" OFF)
+if(NOT CWOC_GPUPROF)
+  list(REMOVE_ITEM PORT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/port_gpuprof.c)
+endif()
 set_source_files_properties(${PORT_SOURCES} PROPERTIES COMPILE_DEFINITIONS PORT_PLATFORM_SOURCE=1)
 # Game-side reimplementations written for the port (missing asm functions).
 file(GLOB PORT_GAME_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/game/*.c)
@@ -155,6 +160,38 @@ if(PORT_VITA)
   # libshacccg.suprx on the console), sceCtrl for input, SDL2 only for timers.
   include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
   target_compile_definitions(cwoc_objs PRIVATE PORT_VITA=1)
+  # PORT_VITAGL_DIR: a vitaGL built by scripts/build_vitagl.sh (lib/ and
+  # include/), linked instead of the VitaSDK one (adds the shader disk cache)
+  set(PORT_VITAGL_DIR "" CACHE PATH "vitaGL from scripts/build_vitagl.sh (empty: the VitaSDK one)")
+  if(PORT_VITAGL_DIR)
+    set(_vgl_lib "${PORT_VITAGL_DIR}/lib/libvitaGL.a")
+    target_include_directories(cwoc_objs BEFORE PRIVATE "${PORT_VITAGL_DIR}/include")
+    target_include_directories(crashwoc BEFORE PRIVATE "${PORT_VITAGL_DIR}/include")
+    set(_vgl_link "${_vgl_lib}")
+    message(STATUS "vitaGL: ${_vgl_lib}")
+  else()
+    set(_vgl_lib "$ENV{VITASDK}/arm-vita-eabi/lib/libvitaGL.a")
+    set(_vgl_link vitaGL)
+  endif()
+  # identity of the linked vitaGL: part of the shader program cache key (gx_gl.c).
+  # A vitaGL from build_vitagl.sh is named by its stamp (commit, make flags,
+  # patch hash): a rebuild of the same vitaGL keeps the id (the archive's own
+  # bytes carry timestamps), so shipped program binaries stay valid.
+  if(PORT_VITAGL_DIR AND EXISTS "${PORT_VITAGL_DIR}/lib/.built")
+    file(READ "${PORT_VITAGL_DIR}/lib/.built" _vgl_stamp)
+    string(SHA256 _vgl_sha "${_vgl_stamp}")
+    string(SUBSTRING "${_vgl_sha}" 0 12 PORT_VITAGL_ID)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PORT_VITAGL_DIR}/lib/.built")
+  elseif(EXISTS "${_vgl_lib}")
+    file(SHA256 "${_vgl_lib}" _vgl_sha)
+    string(SUBSTRING "${_vgl_sha}" 0 12 PORT_VITAGL_ID)
+  else()
+    set(PORT_VITAGL_ID "unknown")
+  endif()
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_vgl_lib}")
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/gx_gl.c PROPERTIES COMPILE_DEFINITIONS
+    "PORT_PLATFORM_SOURCE=1;PORT_VITAGL_ID=\"${PORT_VITAGL_ID}\"")
+  message(STATUS "vitaGL id for the shader cache: ${PORT_VITAGL_ID}")
   set(PORT_VITA_TEXT_PAD 4096 CACHE STRING "bytes of padding at the end of .rodata (see port_main.c)")
   target_compile_definitions(crashwoc PRIVATE PORT_VITA_TEXT_PAD=${PORT_VITA_TEXT_PAD})
   if(NOT PORT_OPT)
@@ -165,12 +202,31 @@ if(PORT_VITA)
   target_compile_options(cwoc_objs PRIVATE -g ${PORT_OPT} -fno-short-enums)
   target_compile_options(crashwoc PRIVATE -g ${PORT_OPT} -fno-short-enums)
   target_link_options(crashwoc PRIVATE -Wl,--no-enum-size-warning)
+  # vita-elf-create appends ~4 KB of module data after the text segment and
+  # fails ("segment 1 overlaps") when the text ends just below the 64 KB
+  # boundary of the data segment. The SDK linker script (armvita.x) reserves
+  # __sce_headroom bytes there; 8 KB always leaves room, whatever the code
+  # size (the .rodata pad in port_main.c only moved the boundary).
+  target_link_options(crashwoc PRIVATE -Wl,--defsym,__sce_headroom=0x2000)
   target_link_libraries(crashwoc
-    vitaGL vitashark SceShaccCgExt mathneon taihen_stub SceShaccCg_stub
-    SDL2 SceKernelDmacMgr_stub SceGxm_stub SceDisplay_stub SceCtrl_stub SceAppMgr_stub
+    ${_vgl_link} vitashark SceShaccCgExt mathneon taihen_stub SceShaccCg_stub
+    SDL2 SceKernelDmacMgr_stub SceGxm_stub SceDisplay_stub SceCtrl_stub SceSysmem_stub SceAppMgr_stub
     SceAppUtil_stub SceSysmodule_stub SceCommonDialog_stub SceIme_stub SceAudio_stub
     SceAudioIn_stub SceTouch_stub SceHid_stub SceMotion_stub ScePower_stub SceProcessmgr_stub
     SceRtc_stub stdc++ pthread m c)
+  if(CWOC_GPUPROF)
+    # client libraries from psp2-cex-gpues4-prof (CMAKE_PREFIX_PATH: its install
+    # prefix). Only the GXM observer: its --wrap options put every sceGxm call of
+    # vitaGL through it, so it goes after vitaGL on the link line.
+    find_package(psp2_gpuprof CONFIG REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    find_library(GPUPROF_STUB NAMES psp2_gpuprof_stub REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    target_compile_definitions(cwoc_objs PRIVATE PORT_GPUPROF=1)
+    target_compile_definitions(crashwoc PRIVATE PORT_GPUPROF=1)
+    get_target_property(_gp_inc psp2_gpuprof::client INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(cwoc_objs PRIVATE ${_gp_inc})
+    target_link_libraries(crashwoc psp2_gpuprof::client psp2_gpuprof::gxm ${GPUPROF_STUB} ScePower_stub)
+    message(STATUS "GPU profiler capture: on (${GPUPROF_STUB})")
+  endif()
   set(VITA_APP_NAME "Crash WOC")
   set(VITA_TITLEID "CRWC00001")
   set(VITA_VERSION "00.10")
@@ -192,6 +248,20 @@ if(PORT_VITA)
       if(EXISTS "${CWOC_LIVEAREA_DIR}/${f}")
         list(APPEND CWOC_VPK_FILES FILE "${CWOC_LIVEAREA_DIR}/${f}" sce_sys/livearea/contents/${f})
       endif()
+    endforeach()
+  endif()
+  # Optional shader seed (scripts/shader_seed.py; not in the repo): GPU
+  # programs compiled on a console, packed as app0:shaders/ so a first start
+  # compiles nothing that the seed has (gx_gl.c, port_video.c). Layout:
+  # vgl/v2/{v,f}/<hash>.gxp (vitaGL's shader cache) and prog/<hash>.bin (the
+  # port's program cache, valid only for the same PORT_VITAGL_ID).
+  set(CWOC_SHADER_SEED "" CACHE PATH "folder with a shader seed (scripts/shader_seed.py)")
+  if(CWOC_SHADER_SEED AND IS_DIRECTORY "${CWOC_SHADER_SEED}")
+    file(GLOB_RECURSE _seed_files RELATIVE "${CWOC_SHADER_SEED}" "${CWOC_SHADER_SEED}/*.gxp" "${CWOC_SHADER_SEED}/*.bin")
+    list(LENGTH _seed_files _seed_n)
+    message(STATUS "shader seed: ${_seed_n} files from ${CWOC_SHADER_SEED}")
+    foreach(f ${_seed_files})
+      list(APPEND CWOC_VPK_FILES FILE "${CWOC_SHADER_SEED}/${f}" shaders/${f})
     endforeach()
   endif()
   vita_create_vpk(crashwoc.vpk ${VITA_TITLEID} eboot.bin

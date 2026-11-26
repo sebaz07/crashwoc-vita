@@ -19,8 +19,10 @@ tu propia copia del juego: este proyecto **no incluye archivos del juego**.
   vehículos (robot, carrito de mina, buggy, planeador...), partidas guardadas,
   música y sonido.
 - 30–60 fps según la zona. Las escenas cargadas (muchos enemigos, partículas,
-  vapor) pueden bajar de 30; **Select + abajo** bloquea los fps para un ritmo
-  más parejo.
+  vapor) pueden bajar de 30; **FPS: 30** (pausa > Opciones) fija el
+  juego a 30 fps constantes. Donde la GPU marca los fps, el 3D (no el HUD ni los menús) se
+  dibuja al 85 % de la resolución y se escala; **Mostrar FPS** (pausa >
+  Opciones) enseña los fps.
 - *Crash Blast* (el minijuego de Game Boy Advance por cable link del menú
   principal) no está disponible: la Vita no tiene GBA.
 - Problemas conocidos: puede que algunas plataformas aplastadoras de *Earth
@@ -79,12 +81,22 @@ tu propia copia del juego: este proyecto **no incluye archivos del juego**.
 | Stick izquierdo | Moverse |
 | X | A de GameCube (saltar) |
 | Cuadrado | B de GameCube (girar) |
-| Círculo / Triángulo | X / Y de GameCube |
+| Círculo | X de GameCube (agacharse, deslizarse) |
+| Triángulo | Z de GameCube (ir de puntillas, con las zapatillas sigilosas) |
 | L / R | L / R de GameCube |
-| Select | Z de GameCube |
+| Select | Y de GameCube (muestra los contadores del HUD mientras se mantiene) |
 | Start | Start / pausa |
-| Select + arriba | Modo de pantalla: 4:3, estirado, panorámico (se guarda) |
-| Select + abajo | Bloqueo de frames on/off (ritmo más parejo, puede limitar los fps) |
+| Start > Opciones > Pantalla | Modo de pantalla: 4:3, estirado, panorámico (se guarda) |
+| Start > Opciones > FPS | 30 (30 constantes, cada frame dos vblanks en pantalla) o desbloqueados (hasta 60; se guarda) |
+| Start > Opciones > Mostrar FPS | Fotogramas por segundo en la esquina superior izquierda on/off, con la letra del juego (se guarda) |
+
+Los botones que aparecen en pantalla son los de la Vita (X, cuadrado,
+círculo, triángulo) en lugar de los de GameCube, y los textos de los poderes
+nombran el botón que hace cada movimiento en la Vita (triángulo para ir de
+puntillas, L y R por los gatillos) en los seis idiomas. En panorámico el
+marco del menú de pausa ocupa toda la pantalla. La vibración funciona en una
+PS TV con DualShock 3 o 4; la Vita portátil no tiene motor, así que allí la
+opción no aparece.
 
 Partidas: `ux0:data/crashwoc/save/`. Log: `ux0:data/crashwoc/crashwoc.log`.
 

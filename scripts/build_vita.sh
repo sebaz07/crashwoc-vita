@@ -13,7 +13,26 @@ dol="$here/decomp/orig/GCBE7D/sys/main.dol"
 ( cd "$here/decomp" && python3 configure.py && ninja build/GCBE7D/config.json )
 extra=()
 [ -n "${CWOC_LIVEAREA_DIR:-}" ] && extra+=("-DCWOC_LIVEAREA_DIR=$CWOC_LIVEAREA_DIR")
-cmake -S "$here/port" -B "$here/build-vita" -G Ninja -DPORT_VITA=ON \
+# shader seed packed into the VPK when there is one (scripts/shader_seed.py)
+seed="${CWOC_SHADER_SEED:-$here/shader-seed}"
+if [ -d "$seed" ]; then extra+=("-DCWOC_SHADER_SEED=$seed"); else extra+=("-DCWOC_SHADER_SEED="); fi
+# vitaGL with the shader disk cache (scripts/build_vitagl.sh); CWOC_SDK_VITAGL=1
+# links the VitaSDK package instead
+if [ -n "${CWOC_SDK_VITAGL:-}" ]; then
+  extra+=("-DPORT_VITAGL_DIR=")
+else
+  "$here/scripts/build_vitagl.sh"
+  extra+=("-DPORT_VITAGL_DIR=$here/build-vitagl")
+fi
+# CWOC_GPUPROF=1: measurement build with the GPU profiler capture
+# (port/src/port_gpuprof.c) in build-vita-gpuprof; GPUPROF_PREFIX: the install
+# prefix of the psp2-cex-gpues4-prof client libraries
+bdir="$here/build-vita"
+if [ -n "${CWOC_GPUPROF:-}" ]; then
+  bdir="$here/build-vita-gpuprof"
+  extra+=("-DCWOC_GPUPROF=ON" "-DCMAKE_PREFIX_PATH=${GPUPROF_PREFIX:-$HOME/vita-dev/gpuprof-prefix}")
+fi
+cmake -S "$here/port" -B "$bdir" -G Ninja -DPORT_VITA=ON \
   -DCWOC_DOL="$dol" -DCWOC_ASM_DIR="$here/decomp/build/GCBE7D/asm" "${extra[@]}"
-ninja -C "$here/build-vita"
-echo "VPK: $here/build-vita/crashwoc.vpk"
+ninja -C "$bdir"
+echo "VPK: $bdir/crashwoc.vpk"

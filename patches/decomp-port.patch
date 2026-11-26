@@ -523,6 +523,30 @@ index cd4780c..c7dd148 100644
          }
  
          for (i = 0; i < 8; i++) {
+diff --git a/src/gamecode/cloudfx.c b/src/gamecode/cloudfx.c
+index afea0c9..06d3d8c 100644
+--- a/src/gamecode/cloudfx.c
++++ b/src/gamecode/cloudfx.c
+@@ -189,6 +189,19 @@ void CloseClouds() {
+ void DoClouds(s32 paused) {
+   struct numtx_s *m;
+   s32 i;
++#ifdef PORT
++  extern void tbslotBegin(int tbh, int slotix);
++  extern void tbslotEnd(int tbh, int slotix);
++  void DoClouds_port(s32 paused);
++  tbslotBegin(0, 35); /* port profile: clouds/snow */
++  DoClouds_port(paused);
++  tbslotEnd(0, 35);
++}
++
++void DoClouds_port(s32 paused) {
++  struct numtx_s *m;
++  s32 i;
++#endif
+   
+   if (disable_clouds == 0) {
+     NuCameraEnableClipping(0);
 diff --git a/src/gamecode/creature.c b/src/gamecode/creature.c
 index affc480..0f49a86 100644
 --- a/src/gamecode/creature.c
@@ -1114,7 +1138,7 @@ index 3f05987..3c51746 100644
  //NGC MATCH
  s32 CombinationCharacterBD(char c0,char c1) {
 diff --git a/src/gamecode/game.c b/src/gamecode/game.c
-index 061c06d..e537dd9 100644
+index 061c06d..86e0532 100644
 --- a/src/gamecode/game.c
 +++ b/src/gamecode/game.c
 @@ -389,7 +389,11 @@ extern char* tYES[6];
@@ -1280,7 +1304,18 @@ index 061c06d..e537dd9 100644
      old_menu = cur->menu;
      cur->wait = 0;
      lock = 0;
-@@ -7356,10 +7381,17 @@ extern struct ldata_s *LDATA;
+@@ -7193,6 +7218,10 @@ void GetMenuInfo(struct cursor_s* cur) {
+             if (LANGUAGEOPTION != 0) {
+                 cur->y_max = 3;
+             }
++#ifdef PORT
++            /* screen mode, frame lock and fps counter before DONE (port/src/game/port_hooks.c) */
++            cur->y_max += 3;
++#endif
+             return;
+         case 7:
+             cur->y_max = 2;
+@@ -7356,10 +7385,17 @@ extern struct ldata_s *LDATA;
  extern char* LanguageName[6];
  extern s32 Level;
  extern char* LevelName[44][6];
@@ -1299,7 +1334,7 @@ index 061c06d..e537dd9 100644
  extern s32 highallocaddr;
  extern s32 pause_dir;
  extern union variptr_u superbuffer_base;
-@@ -8349,10 +8381,36 @@ s32 PlayerObjectAnimCollision(struct obj_s *obj,struct nuspecial_s *special,floa
+@@ -8349,10 +8385,36 @@ s32 PlayerObjectAnimCollision(struct obj_s *obj,struct nuspecial_s *special,floa
    return 0;
  }
  
@@ -1336,7 +1371,7 @@ index 061c06d..e537dd9 100644
      dead = 0;
      if (Bonus == 2 && plr->obj.dead != 0) {
          dead = 1;
-@@ -8639,7 +8697,7 @@ void InitSplineTable(void) {
+@@ -8639,7 +8701,7 @@ void InitSplineTable(void) {
    if (world_scene[0] != NULL) {
      for (i = 0; i < 0x49; i++) {
        SplTab[i].spl = NULL;
@@ -1345,7 +1380,7 @@ index 061c06d..e537dd9 100644
          SplTab[i].spl = NuSplineFind(world_scene[0],SplTab[i].name);
          if (SplTab[i].spl != NULL) {
            if ((SplTab[i].min > 0) && (SplTab[i].spl->len < SplTab[i].min)) {
-@@ -8670,7 +8728,7 @@ void InitObjectTable(void) {
+@@ -8670,7 +8732,7 @@ void InitObjectTable(void) {
  
    for (i = 0; i < 0xc9; i++) {
      ObjTab[i].obj.special = NULL;
@@ -1354,7 +1389,7 @@ index 061c06d..e537dd9 100644
        if (NuSpecialFind(*ObjTab[i].scene,&ObjTab[i].obj,ObjTab[i].name) != 0) {
          (ObjTab[i].obj.special)->instance->flags.visible = ObjTab[i].visible;
          for (j = 0; j < 0x1a; j++) {
-@@ -8890,12 +8948,20 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
+@@ -8890,12 +8952,20 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
        if (((angle == NULL) & 1) == 0) {
          a = SplinePointAngle(spl,j);
          d = RotDiff(*angle,a);
@@ -1375,6 +1410,20 @@ index 061c06d..e537dd9 100644
        }
      }
    }
+@@ -8903,6 +8973,13 @@ void PointAlongSpline(struct nugspline_s *spl,float ratio,struct nuvec_s *dst,u1
+ }
+ 
+ //NGC MATCH
++#ifdef PORT
++/* does the level draw a sky (parallax objects) behind the world? (port_hooks.c) */
++int port_level_has_sky(void) {
++  return (ObjTab[9].obj.special != NULL) || (ObjTab[10].obj.special != NULL);
++}
++#endif
++
+ void DrawParallax(void) {
+   static struct numtx_s m_513;
+   struct nuvec_s s;
 diff --git a/src/gamecode/game_deb.c b/src/gamecode/game_deb.c
 index 72dd8ae..5aade31 100644
 --- a/src/gamecode/game_deb.c
@@ -3561,10 +3610,27 @@ index e3eaf75..76d6006 100644
          case 0:
              offset = BitCountTable[(animcurve->mask >> 0x18) & atime->time_mask];
 diff --git a/src/nu3dx/nucamera.c b/src/nu3dx/nucamera.c
-index f999be2..7601c8e 100644
+index f999be2..2f6612f 100644
 --- a/src/nu3dx/nucamera.c
 +++ b/src/nu3dx/nucamera.c
-@@ -112,6 +112,10 @@ void NuCameraSet(struct nucamera_s *camera) {
+@@ -95,6 +95,16 @@ void NuCameraSet(struct nucamera_s *camera) {
+     struct numtx_s mri;
+ 
+     global_camera = *camera;
++#ifdef PORT
++    { /* geometry past the point where the level fog is total is drawn in the
++       * fog colour, which is also the clear colour: clip it (culling and the
++       * far plane) instead of processing it (port_fogclip_update) */
++        extern float port_fog_farclip;
++        if ((port_fog_farclip > 0.0f) && (global_camera.farclip > port_fog_farclip)) {
++            global_camera.farclip = port_fog_farclip;
++        }
++    }
++#endif
+     FixAxes(&global_camera.mtx);
+     if (camfx == NUCAMFX_NONE) {
+         NuMtxInv(&vmtx,&global_camera.mtx);
+@@ -112,6 +122,10 @@ void NuCameraSet(struct nucamera_s *camera) {
          NuMtxMul(&vmtx,&vmtx,&global_reflect.mtx);
          NuMtxMul(&vmtx,&vmtx,&mM);
      }
@@ -3675,10 +3741,24 @@ index ec81030..283fcc5 100644
                  }
                  shadow_data->joint = NuFileReadChar(fh);
 diff --git a/src/nu3dx/nulight.c b/src/nu3dx/nulight.c
-index 61054f6..62a4d58 100644
+index 61054f6..f1dd8ec 100644
 --- a/src/nu3dx/nulight.c
 +++ b/src/nu3dx/nulight.c
-@@ -92,8 +92,15 @@ void* NuLightCreate(void) {
+@@ -53,6 +53,13 @@ void NuLightFog(float pnear,float pfar,u32 colour,s32 blur,s32 haze) {
+   else {
+     GS_SetupFog(0,0.0f,0.0f,0);
+   }
++#ifdef PORT
++  { /* the game sets the level fog here every frame: derive the camera's
++     * fog-based far clip from it (port/src/game/port_hooks.c, nucamera.c) */
++    extern void port_fogclip_update(float pnear, float pfar);
++    port_fogclip_update(pnear, pfar);
++  }
++#endif
+   return;
+ }
+ 
+@@ -92,8 +99,15 @@ void* NuLightCreate(void) {
      alloclight = freelight;
      id = alloclight;
      freelight = next;
@@ -3695,7 +3775,7 @@ index 61054f6..62a4d58 100644
      memset(&light[id],0,100);
      NuMtxSetIdentity((struct Mtx *)&light[id].light.mtx);
 diff --git a/src/nu3dx/numtl.c b/src/nu3dx/numtl.c
-index 9685b8c..a0ea23f 100644
+index 9685b8c..b80e635 100644
 --- a/src/nu3dx/numtl.c
 +++ b/src/nu3dx/numtl.c
 @@ -200,6 +200,9 @@ struct numtl_s * NuMtlRead(s32 fh) {
@@ -3708,7 +3788,7 @@ index 9685b8c..a0ea23f 100644
    return mtl;
  }
  
-@@ -457,11 +460,23 @@ LAB_800b3394:
+@@ -457,11 +460,36 @@ LAB_800b3394:
    return;
  }
  
@@ -3723,6 +3803,19 @@ index 9685b8c..a0ea23f 100644
 +#endif
  //NGC MATCH
  void NuMtlRender(void) {
++#ifdef PORT
++  extern void port_gx_rec_all(int on);
++  port_gx_rec_all(1); /* the whole pass recorded for the GX thread */
++  {
++    extern unsigned port_otskip_hit, port_otskip_n;
++    static unsigned calls;
++    if (++calls % 1000 == 0) {
++      extern void port_log(const char *fmt, ...);
++      port_log("mtl: sorted items %u (material kept %u)", port_otskip_n, port_otskip_hit);
++      port_otskip_hit = port_otskip_n = 0;
++    }
++  }
++#endif
    DBTimerStart(0x13);
 +  MSUB_B(0, 1);
    NuMtlRender3d();
@@ -3732,7 +3825,7 @@ index 9685b8c..a0ea23f 100644
    DBTimerStart(0x12);
    DBTimerEnd(0x12);
    DBTimerStart(0x11);
-@@ -469,9 +484,13 @@ void NuMtlRender(void) {
+@@ -469,9 +497,13 @@ void NuMtlRender(void) {
    DBTimerStart(0x10);
    NuMtlRenderDynamic2d3d();
    DBTimerEnd(0x10);
@@ -3746,7 +3839,7 @@ index 9685b8c..a0ea23f 100644
    DBTimerStart(0xe);
    NuMtlRenderFaceOn();
    DBTimerEnd(0xe);
-@@ -484,15 +503,20 @@ void NuMtlRender(void) {
+@@ -484,15 +516,23 @@ void NuMtlRender(void) {
    DBTimerStart(10);
    NuMtlRenderWater();
    DBTimerEnd(10);
@@ -3764,17 +3857,34 @@ index 9685b8c..a0ea23f 100644
    NuMtlRenderUpd();
    DBTimerEnd(7);
 +  MSUB_E(6);
++#ifdef PORT
++  port_gx_rec_all(0);
++#endif
    return;
  }
  
-@@ -504,11 +528,30 @@ static void NuMtlRender3d(void) {
+@@ -501,19 +541,52 @@ static void NuMtlRender3d(void) {
+   struct nusysmtl_s *sm;
+   struct nurndritem_s *ri;
+ 
++#ifdef PORT
++  /* GX thread: record this pass's GX calls (port/src/gx_rec.inc) */
++  extern void port_gx_rec_scope(int on);
++  port_gx_rec_scope(1);
++#endif
    GS_SetAlphaCompare(7,0);
    for (sm = smlist; sm != NULL; sm = sm->next) {
      if (((sm->mtl).L == '\0') && (sm->rndrlist != NULL)) {
 +      MSUB_B(1, 4);
++#ifdef PORT
++      extern int port_ablate(void);
++      if (port_ablate() != 8) /* measurement only */
++#endif
++      {
        NuTexSetTexture(0,(sm->mtl).tid);
        NuMtlSetRenderStates(&sm->mtl);
        NuTexSetTextureStates(&sm->mtl);
++      }
 +      MSUB_E(1);
        for (ri = sm->rndrlist; ri != NULL; ri = ri->next) {
 +#ifdef PORT
@@ -3798,11 +3908,70 @@ index 9685b8c..a0ea23f 100644
        }
        sm->rndrlist = NULL;
      }
+   }
+   GS_SetAlphaCompare(7,0);
++#ifdef PORT
++  port_gx_rec_scope(0);
++#endif
+   return;
+ }
+ 
+@@ -557,13 +630,42 @@ static void NuMtlRenderDynamic2d3d(void) {
+ }
+ 
+ //NGC MATCH
++#ifdef PORT
++unsigned port_otskip_hit, port_otskip_n;
++#endif
+ static void NuMtlRenderOT(s32 begin,s32 end) {
+   struct nuotitem_s *oti;
+   s32 i;
++#ifdef PORT
++  static int otskip = -1;
++  struct nusysmtl_s *ot_prev = NULL;
++  extern int port_ablate(void);
++  if (otskip < 0) otskip = !(getenv("CWOC_OTSKIP") && getenv("CWOC_OTSKIP")[0] == '0');
++  if (port_ablate() == 7) { /* measurement only: the sorted passes left out */
++    for (i = begin; i <= end; i++) ot[i] = NULL;
++    return;
++  }
++#endif
+ 
+   GS_SetAlphaCompare(7,0);
+     for (i = begin; i <= end; i++) {
+       for (oti = ot[i]; oti != NULL; oti = oti->next) {
++#ifdef PORT
++        /* PORT: consecutive sorted items of the same material set it up once,
++         * as the static pass does for a whole material list (the per-item z
++         * and alpha compare of the L branch are still set). CWOC_OTSKIP=0: off */
++        port_otskip_n++;
++        if (otskip && oti->mtl == ot_prev) {
++          port_otskip_hit++;
++          if ((oti->mtl->mtl).L != '\0') {
++            GS_SetZCompare(1,1,GX_LEQUAL);
++            GS_SetAlphaCompare(3,0xf7);
++          }
++          NuRndrItem(oti->hdr);
++          continue;
++        }
++        ot_prev = oti->mtl;
++#endif
+         if ((oti->mtl->mtl).L == '\0') {
+           NuTexSetTexture(0,(oti->mtl->mtl).tid);
+           NuMtlSetRenderStates(&oti->mtl->mtl);
 diff --git a/src/nu3dx/nurndr.c b/src/nu3dx/nurndr.c
-index b2137e9..31a020f 100644
+index b2137e9..1ef2ffe 100644
 --- a/src/nu3dx/nurndr.c
 +++ b/src/nu3dx/nurndr.c
-@@ -12,7 +12,11 @@
+@@ -5,6 +5,7 @@
+ #include "../system.h"
+ #include "../nuraster/dxframe.h"
+ #include <string.h>
++#include <stdlib.h>
+ 
+ #define PI 3.1415927f
+ #define MAX_FIXED_POINT 65536
+@@ -12,7 +13,11 @@
  
  s32 GS_Parallax;
  static struct nugeomitem_s geomitem[2048];
@@ -3814,23 +3983,39 @@ index b2137e9..31a020f 100644
  static s32 hgobj_enabled;
  struct numtx_s mtx_array2HGobjRndrDwa[256];
  struct numtx_s mtx_array2HGobj[256];
-@@ -63,7 +67,15 @@ void NuRndrEndScene(void) {
+@@ -35,6 +40,12 @@ void NuRndrInit(void) {
+ //MATCH GCN
+ s32 NuRndrBeginScene(s32 hRT) {
+   u32 bs;
++#ifdef PORT
++  { /* GX thread: replay the last scene before its pools are reused */
++    extern void port_gx_scene_sync(void);
++    port_gx_scene_sync();
++  }
++#endif
+ 
+   if (rndrmtx_cnt_max > rndrmtx_cnt) {
+     rndrmtx_cnt_max = rndrmtx_cnt;
+@@ -63,7 +74,18 @@ void NuRndrEndScene(void) {
  
  //MATCH GCN
  void NuRndrFlush(void) {
 +#ifdef PORT
 +    extern void tbslotBegin(int tbh, int slotix);
 +    extern void tbslotEnd(int tbh, int slotix);
++    extern int port_in_mtlrender;
 +    tbslotBegin(0, 33); /* port profile: material lists rendered */
-     NuMtlRender();
++    port_in_mtlrender = 1;
++    NuMtlRender();
++    port_in_mtlrender = 0;
 +    tbslotEnd(0, 33);
 +#else
-+    NuMtlRender();
+     NuMtlRender();
 +#endif
      NuLightClearStoredLights();
  }
  
-@@ -523,13 +535,25 @@ s32 NuRndrStrip3d(struct nuvtx_tc1_s **vtx,struct numtl_s *mtl,struct numtx_s* w
+@@ -523,13 +545,25 @@ s32 NuRndrStrip3d(struct nuvtx_tc1_s **vtx,struct numtl_s *mtl,struct numtx_s* w
      
      for (i = 0; i < ix; i++) {
          memcpy(vb, *vtx, 0x24);
@@ -3856,7 +4041,7 @@ index b2137e9..31a020f 100644
          vtx--;
      }
      
-@@ -650,17 +674,31 @@ void NuRndrFaceItem(struct nugeomitem_s* item) {
+@@ -650,17 +684,56 @@ void NuRndrFaceItem(struct nugeomitem_s* item) {
  }
  
  //MATCH GCN
@@ -3869,11 +4054,30 @@ index b2137e9..31a020f 100644
 +#define MSUB_B(k, r)
 +#define MSUB_E(k)
 +#endif
++#ifdef PORT
++/* CWOC_ABLATE=N, measurement only (the picture breaks): leave out a part of
++ * the material pass to see its real cost without timers. Geometry items: 1
++ * matrix, 2 SetupShaders, 3 the primitives, 4 the whole item; 5 skinned
++ * items; numtl.c: 7 the sorted (OT) passes, 8 the static pass's material
++ * setup (texture, render and texture states). */
++int port_ablate(void) {
++  static int ablate = -1;
++  if (ablate < 0) ablate = getenv("CWOC_ABLATE") ? atoi(getenv("CWOC_ABLATE")) : 0;
++  return ablate;
++}
++#endif
  static void NuRndrGeomItem(struct nugeomitem_s *item) {
    struct nuprim_s *prim;
++#ifdef PORT
++  const int ablate = port_ablate();
++  if (ablate == 4) return;
++#endif
  
    DBTimerStart(6);
 +  MSUB_B(2, 8);
++#ifdef PORT
++  if (ablate != 1)
++#endif
    if ((struct _GSMATRIX *)item->mtx != NULL) {
      GS_SetWorldMatrix((struct _GSMATRIX *)item->mtx);
    }
@@ -3882,13 +4086,19 @@ index b2137e9..31a020f 100644
    }
 +  MSUB_E(2);
 +  MSUB_B(3, 8);
++#ifdef PORT
++  if (ablate != 2)
++#endif
    SetupShaders(item);
 +  MSUB_E(3);
 +  MSUB_B(4, 8);
++#ifdef PORT
++  if (ablate == 3) return;
++#endif
    for (prim = item->geom->prim; prim != NULL; prim = prim->next) {
            switch (prim->type) {
                case NUPT_POINT:
-@@ -685,6 +723,7 @@ static void NuRndrGeomItem(struct nugeomitem_s *item) {
+@@ -685,10 +758,78 @@ static void NuRndrGeomItem(struct nugeomitem_s *item) {
                break;
            }
    }
@@ -3896,7 +4106,78 @@ index b2137e9..31a020f 100644
    DBTimerEnd(6);
    return;
  }
-@@ -703,6 +742,25 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+ 
++#ifdef PORT
++#ifdef __ARM_NEON
++#include <arm_neon.h>
++#endif
++/* PORT: the blend shapes (faces) of a skinned item, on the Vita. The
++ * original walks the vertices and, for each, every blend: one load from each
++ * blend's offset array per vertex, the worst pattern for the Cortex-A9's
++ * caches (~175 us an item, 3.7-6.6 ms a frame). Here each blend with a weight
++ * is added over all the vertices in turn, 4 at a time with NEON: per vertex
++ * the same products and sums in the same order (vmla is not fused, and NEON's
++ * flush-to-zero / round-to-nearest are the game thread's FPSCR settings), so
++ * the result is bit-identical (CWOC_CHECKBLEND=1 compares every item). */
++static void port_blend_positions(struct nuvec_s *dst, const struct nuvtx_sk3tc1_s *src, int n,
++                                 const struct NUBLENDGEOM_s *bg, const float *w) {
++    /* the blends with a weight, in order: every one is applied to a block of
++     * 4 vertices in registers before the block is stored (one load and one
++     * store of the destination, whatever the number of blends) */
++    const struct nuvec_s *offs[64];
++    float bvs[64];
++    int i, j, k, nb = 0;
++    for (j = 0; j < bg->nblends; j++) {
++        const struct nuvec_s *off = bg->blend_offsets[j];
++        float bv;
++        if (off == NULL) continue;
++        bv = w[bg->ix[j]];
++        if (bv == 0.0f) continue;
++        if (nb == 64) break; /* never seen; the rest go through the loop below */
++        offs[nb] = off;
++        bvs[nb++] = bv;
++    }
++    for (i = 0; i < n; i++) dst[i] = src[i].pnt;
++    i = 0;
++#ifdef __ARM_NEON
++    for (; i + 4 <= n; i += 4) {
++        float32x4x3_t d = vld3q_f32(&dst[i].x);
++        for (k = 0; k < nb; k++) {
++            float32x4x3_t o = vld3q_f32(&offs[k][i].x);
++            d.val[0] = vmlaq_n_f32(d.val[0], o.val[0], bvs[k]);
++            d.val[1] = vmlaq_n_f32(d.val[1], o.val[1], bvs[k]);
++            d.val[2] = vmlaq_n_f32(d.val[2], o.val[2], bvs[k]);
++        }
++        vst3q_f32(&dst[i].x, d);
++    }
++#endif
++    for (; i < n; i++)
++        for (k = 0; k < nb; k++) {
++            dst[i].x = offs[k][i].x * bvs[k] + dst[i].x;
++            dst[i].y = offs[k][i].y * bvs[k] + dst[i].y;
++            dst[i].z = offs[k][i].z * bvs[k] + dst[i].z;
++        }
++    if (nb == 64) /* more than 64 weighted blends (never seen): finish them blend by blend,
++                   * from the one the first loop stopped at */
++        for (; j < bg->nblends; j++) {
++            const struct nuvec_s *off = bg->blend_offsets[j];
++            float bv;
++            if (off == NULL) continue;
++            bv = w[bg->ix[j]];
++            if (bv == 0.0f) continue;
++            for (i = 0; i < n; i++) {
++                dst[i].x = off[i].x * bv + dst[i].x;
++                dst[i].y = off[i].y * bv + dst[i].y;
++                dst[i].z = off[i].z * bv + dst[i].z;
++            }
++        }
++}
++#endif
++
+ //NGC MATCH
+ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+   float blendval;
+@@ -703,12 +844,74 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
  
    blendgeom = item->geom->blendgeom;
    DBTimerStart(4);
@@ -3922,6 +4203,130 @@ index b2137e9..31a020f 100644
    DBTimerStart(0xd);
    PPCMtmmcr0(0x8b);
    PPCMtmmcr1(0x78400000);
+   geom = item->geom;
+   srcverts = (struct nuvtx_sk3tc1_s *)geom->hVB;
+   destvb = (struct nuvec_s *)geom->blendgeom->hVB;
++#ifdef PORT
++  {
++    static int check = -1;
++    if (check < 0) check = getenv("CWOC_CHECKBLEND") != NULL;
++    MSUB_B(14, 8);
++    port_blend_positions(destvb, srcverts, item->geom->vtxcnt, blendgeom, *item->blendvals);
++    MSUB_E(14);
++    if (!check) goto blend_done;
++    /* check: keep the fast result aside and run the original loop below */
++    {
++      static struct nuvec_s *fast;
++      static int fast_n;
++      if (fast_n < item->geom->vtxcnt) {
++        free(fast);
++        fast_n = item->geom->vtxcnt;
++        fast = malloc(sizeof(*fast) * fast_n);
++      }
++      memcpy(fast, destvb, sizeof(*fast) * item->geom->vtxcnt);
++      for (i = 0; i < item->geom->vtxcnt; i++) {
++        destvb[i] = srcverts[i].pnt;
++        for (j = 0; j < blendgeom->nblends; j++) {
++          LCBlendOffsets = blendgeom->blend_offsets[j];
++          if (LCBlendOffsets != 0) {
++            blendval = (*item->blendvals)[blendgeom->ix[j]];
++            if (blendval != 0.0f) {
++              destvb[i].x = LCBlendOffsets[i].x * blendval + destvb[i].x;
++              destvb[i].y = blendgeom->blend_offsets[j][i].y * blendval + destvb[i].y;
++              destvb[i].z = blendgeom->blend_offsets[j][i].z * blendval + destvb[i].z;
++            }
++          }
++        }
++      }
++      {
++        static unsigned items, bad;
++        extern void port_log(const char *fmt, ...);
++        items++;
++        if (memcmp(fast, destvb, sizeof(*fast) * item->geom->vtxcnt)) bad++;
++        if (items % 2000 == 0) port_log("blend check: %u of %u items differ", bad, items);
++      }
++    }
++    goto blend_done;
++  }
++#endif
+     for (i = 0; i < item->geom->vtxcnt; i++) {
+         destvb->x = srcverts->pnt.x;
+         destvb->y = srcverts->pnt.y;
+@@ -727,9 +930,13 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+       destvb = destvb + 1;
+       srcverts = srcverts + 1;
+     }
++#ifdef PORT
++blend_done:
++#endif
+   PPCMtmmcr1(0);
+   PPCMtmmcr0(0);
+   DBTimerEnd(0xd);
++  MSUB_B(15, 8);
+   SetupShaders(item);
+   GS_LoadWorldMatrixIdentity();
+   GS_SetVertexSource((float *)item->geom->hVB);
+@@ -743,6 +950,7 @@ static void NuRndrBlendedSkinItem(struct nugeomitem_s* item) {
+       NuErrorProlog("C:/source/crashwoc/code/nu3dx/nurndr.c",0x1087)("NuRndrGeomItem : Unknown primitive type!");
+     }
+   }
++  MSUB_E(15);
+   DBTimerEnd(4);
+   return;
+ }
+@@ -756,7 +964,10 @@ void NuRndrSkinItem2(struct nugeomitem_s *item) {
+         return;
+     }
+     DBTimerStart(5);
++    MSUB_B(11, 8);
+     SetupShaders(item);
++    MSUB_E(11);
++    MSUB_B(12, 8);
+     GS_LoadWorldMatrixIdentity();
+     GS_SetVertexSource((float *)item->geom->hVB);
+     for (prim = item->geom->prim; prim != NULL; prim = prim->next) {
+@@ -768,6 +979,7 @@ void NuRndrSkinItem2(struct nugeomitem_s *item) {
+             NuErrorProlog("C:/source/crashwoc/code/nu3dx/nurndr.c",0xf4e)("NuRndrGeomItem : Unknown primitive type!");
+         }
+     }
++    MSUB_E(12);
+     DBTimerEnd(5);
+     return;
+ }
+@@ -791,22 +1003,33 @@ void NuRndrItem(struct nurndritem_s *item) {
+         switch (item->type) {
+                     case NURNDRITEM_GEOM2D:
+                         DBTimerStart(0x1e);
++                        MSUB_B(10, 8);
+                         NuRndr2dItem((struct nugeomitem_s *)item);
++                        MSUB_E(10);
+                         DBTimerEnd(0x1e);
+                     break;
+                     case NURNDRITEM_GEOM3D:
+                         DBTimerStart(0x1f);
++                        MSUB_B(8, 8);
+                         NuRndrGeomItem((struct nugeomitem_s *)item);
++                        MSUB_E(8);
+                         DBTimerEnd(0x1f);
+                         break;
+                     case NURNDRITEM_SKIN3D2:
++#ifdef PORT
++                        if (port_ablate() == 5) break;
++#endif
+                         DBTimerStart(0x20);
++                        MSUB_B(9, 8);
+                         NuRndrSkinItem2((struct nugeomitem_s *)item);
++                        MSUB_E(9);
+                         DBTimerEnd(0x20);
+                         break;
+                     case NURNDRITEM_GEOMFACE:
+                         DBTimerStart(0x22);
++                        MSUB_B(10, 8);
+                         NuRndrFaceItem((struct nugeomitem_s *)item);
++                        MSUB_E(10);
+                         DBTimerEnd(0x22);
+                         break;
+                     default:
 diff --git a/src/nu3dx/nurndr.h b/src/nu3dx/nurndr.h
 index 2db1eb2..28a5c02 100644
 --- a/src/nu3dx/nurndr.h
@@ -3967,7 +4372,7 @@ index 2db1eb2..28a5c02 100644
  static struct numtx_s rndrmtx[1536];
  
 diff --git a/src/nu3dx/nuscene.c b/src/nu3dx/nuscene.c
-index ef903b7..ee4e72f 100644
+index ef903b7..7f66d05 100644
 --- a/src/nu3dx/nuscene.c
 +++ b/src/nu3dx/nuscene.c
 @@ -7,6 +7,9 @@
@@ -4149,7 +4554,7 @@ index ef903b7..ee4e72f 100644
  
      for (i = 0; i < gsc->numtexanims; i++){
          tex = &gsc->texanims[i]; //tex = gsc->texanims + (cnt << 5);
-@@ -709,7 +781,9 @@ struct nuscene_s * NuSceneLoad(char *filename) {
+@@ -709,20 +781,35 @@ struct nuscene_s * NuSceneLoad(char *filename) {
    strcpy(file2,filename);
    fh = NuFileOpen(file2,NUFILE_READ);
    if (fh != 0) {
@@ -4159,7 +4564,33 @@ index ef903b7..ee4e72f 100644
              scene = (struct nuscene_s *)NuMemAlloc(0x3c);
              memset(scene,0,0x3c);
              blk = blkcnt;
-@@ -742,7 +816,9 @@ struct nuscene_s * NuSceneLoad(char *filename) {
+             if (NuFileBeginBlkRead(fh,0) == 0x30435347) { //"0CSG"
+               scene->gscene = (struct nugscn_s *)NuMemAlloc(0x74);
+               memset(scene->gscene,0,0x74);
++#ifdef PORT
++              { /* where a scene load's CPU goes (log line per scene) */
++                extern unsigned long long port_prof_now(void);
++                extern void port_log(const char *fmt, ...);
++                unsigned long long t0 = port_prof_now();
++                ReadNuIFFGScene(fh,scene->gscene);
++                NuSceneAverageTextureSpaceVerts(scene);
++                port_log("scene: %s read in %.0f ms", filename, (port_prof_now() - t0) / 1000.0);
++              }
++              if (0)
++#endif
+               ReadNuIFFGScene(fh,scene->gscene);
+                 for (i = 0; i < scene->gscene->numinstance; i++) {
+                       for (geom1 = scene->gscene->gobjs[scene->gscene->instances[i].objid]->geom;
+                           geom1 != NULL; geom1 = geom1->next) {
+                       }
+                 }
++#ifndef PORT
+               NuSceneAverageTextureSpaceVerts(scene);
++#endif
+                 for (i = 0; i < scene->gscene->numgobj; i++) {
+                       for (gobj1 = scene->gscene->gobjs[i]; gobj1 != NULL; gobj1 = gobj1->next_gobj) {
+                             for (geom1 = *(&gobj1->geom); geom1 != NULL; geom1 = geom1->next) {
+@@ -742,7 +829,9 @@ struct nuscene_s * NuSceneLoad(char *filename) {
              }
    }
    else {
@@ -4635,7 +5066,7 @@ index 6b5acb0..c439e2a 100644
  u32 dbg_msg_cnt = 0;
  char* errfile;
 diff --git a/src/nucore/nufile.c b/src/nucore/nufile.c
-index 2fb83b4..b2fc28c 100644
+index 2fb83b4..fdfedc1 100644
 --- a/src/nucore/nufile.c
 +++ b/src/nucore/nufile.c
 @@ -6,6 +6,19 @@
@@ -4658,7 +5089,22 @@ index 2fb83b4..b2fc28c 100644
  // Re-declare needed functions from numem.h
  void* NuMemAlloc(s32 size);
  void NuMemFree(void* data);
-@@ -269,6 +282,10 @@ s32 NuFileSeek(s32 handle, s32 offset, s32 origin)
+@@ -56,6 +69,14 @@ s32 NuFileExists(char* filename) {
+ 
+     strcpy(name, "/");
+ 	strcat(name, filename);
++#ifdef PORT
++	{
++		/* the port's file index answers without opening the file (an open
++		 * on the memory card costs ~ms; every NuFileSize / NuFileLoad asks) */
++		extern const char *port_fs_resolve(const char *name);
++		return port_fs_resolve(name) != NULL;
++	}
++#endif
+ 	filep = fopen(name, "r");
+ 	if (filep != NULL) {
+ 		fclose(filep);
+@@ -269,6 +290,10 @@ s32 NuFileSeek(s32 handle, s32 offset, s32 origin)
  			offset -= bytesleft;
  		}
  		bytesleft = 0;
@@ -4669,7 +5115,26 @@ index 2fb83b4..b2fc28c 100644
  		return fseek(fpointers[handle], (long)offset, forig[origin]);
  	}
  }
-@@ -425,6 +442,9 @@ void NuStopLoadScreen(s32 screen) {
+@@ -279,6 +304,18 @@ s32 NuFileSize(char* fileName) {
+ 	s32 rv = -1;
+ 	s32 handle;
+ 
++#ifdef PORT
++	/* the port's file index has the size: no open + seek + close (each open
++	 * on the memory card costs ~2.7 ms, and NuFileLoad opens again to read) */
++	if (fileName != NULL && *fileName != 0) {
++		extern long port_fs_size(const char *name);
++		char name[128];
++		strcpy(name, "/");
++		strcat(name, fileName);
++		return (s32)port_fs_size(name);
++	}
++	return rv;
++#endif
+ 	if (fileName != NULL && *fileName != 0) {
+ 	    if (NuFileExists(fileName) != 0) {
+             handle = NuFileOpen(fileName, NUFILE_READ);
+@@ -425,6 +462,9 @@ void NuStopLoadScreen(s32 screen) {
  float NuFileReadFloat(s32 handle) {
  	float data = 0.0f;
  	NuFileRead(handle, &data, 4);
@@ -4679,7 +5144,7 @@ index 2fb83b4..b2fc28c 100644
  	return data;
  }
  
-@@ -432,6 +452,9 @@ float NuFileReadFloat(s32 handle) {
+@@ -432,6 +472,9 @@ float NuFileReadFloat(s32 handle) {
  s32 NuFileReadInt(s32 handle) {
  	s32 data;
  	NuFileRead(handle, &data, 4);
@@ -4689,7 +5154,7 @@ index 2fb83b4..b2fc28c 100644
  	return data;
  }
  
-@@ -439,6 +462,9 @@ s32 NuFileReadInt(s32 handle) {
+@@ -439,6 +482,9 @@ s32 NuFileReadInt(s32 handle) {
  s16 NuFileReadShort(s32 handle) {
  	s16 data;
  	NuFileRead(handle, &data, 2);
@@ -4699,7 +5164,7 @@ index 2fb83b4..b2fc28c 100644
  	return data;
  }
  
-@@ -464,6 +490,9 @@ s32 NuFileBeginBlkRead(s32 handle, s32 blkType) {
+@@ -464,6 +510,9 @@ s32 NuFileBeginBlkRead(s32 handle, s32 blkType) {
          pos = NuFilePos(handle);
  		blkinfo[bh].pos = pos;
  		NuFileRead(handle, &blkinfo[bh], 8);
@@ -4709,6 +5174,117 @@ index 2fb83b4..b2fc28c 100644
  		if (blkinfo[bh].hdr.size < 0) {
  			blkinfo[bh].hdr.size = -blkinfo[bh].hdr.size;
  		}
+diff --git a/src/numath/numtx.c b/src/numath/numtx.c
+index e57631e..7b9a582 100644
+--- a/src/numath/numtx.c
++++ b/src/numath/numtx.c
+@@ -307,6 +307,97 @@ void NuMtxSetRotateXYZ(struct Mtx* m, s32 a[3])
+ 	m->m44 = 1.00000000;
+ }
+ 
++#if defined(PORT) && defined(__ARM_NEON)
++#include <arm_neon.h>
++/* PORT: NEON with the same products and the same order of the sums as the C
++ * below (NEON multiply-accumulate rounds like the scalar code, and FZ is on
++ * either way): identical results, a fraction of the time. Every row is
++ * loaded before anything is stored (dest may be a or b). */
++void NuMtxMul(struct Mtx* dest, struct Mtx* a, struct Mtx* b)
++{
++	const float32x4_t b1 = vld1q_f32(&b->m11), b2 = vld1q_f32(&b->m21), b3 = vld1q_f32(&b->m31), b4 = vld1q_f32(&b->m41);
++	const float a11 = a->m11, a12 = a->m12, a13 = a->m13, a21 = a->m21, a22 = a->m22, a23 = a->m23;
++	const float a31 = a->m31, a32 = a->m32, a33 = a->m33, a41 = a->m41, a42 = a->m42, a43 = a->m43;
++	float32x4_t r1 = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(b3, a13), b1, a11), b2, a12);
++	float32x4_t r2 = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(b3, a23), b1, a21), b2, a22);
++	float32x4_t r3 = vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(b3, a33), b1, a31), b2, a32);
++	float32x4_t r4 = vaddq_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(b3, a43), b1, a41), b2, a42), b4);
++	r1 = vsetq_lane_f32(0.0f, r1, 3);
++	r2 = vsetq_lane_f32(0.0f, r2, 3);
++	r3 = vsetq_lane_f32(0.0f, r3, 3);
++	r4 = vsetq_lane_f32(1.0f, r4, 3);
++	vst1q_f32(&gm.m11, r1); vst1q_f32(&gm.m21, r2); vst1q_f32(&gm.m31, r3); vst1q_f32(&gm.m41, r4);
++	vst1q_f32(&dest->m11, r1); vst1q_f32(&dest->m21, r2); vst1q_f32(&dest->m31, r3); vst1q_f32(&dest->m41, r4);
++}
++
++void NuMtxMulH(struct Mtx* dest, struct Mtx* a, struct Mtx* b)
++{
++	const float32x4_t b1 = vld1q_f32(&b->m11), b2 = vld1q_f32(&b->m21), b3 = vld1q_f32(&b->m31), b4 = vld1q_f32(&b->m41);
++	const float32x4_t ar1 = vld1q_f32(&a->m11), ar2 = vld1q_f32(&a->m21), ar3 = vld1q_f32(&a->m31), ar4 = vld1q_f32(&a->m41);
++#define MULH_ROW(ar) vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(b4, vgetq_lane_f32(ar, 3)), b3, vgetq_lane_f32(ar, 2)), \
++                                             b1, vgetq_lane_f32(ar, 0)), b2, vgetq_lane_f32(ar, 1))
++	const float32x4_t r1 = MULH_ROW(ar1), r2 = MULH_ROW(ar2), r3 = MULH_ROW(ar3), r4 = MULH_ROW(ar4);
++#undef MULH_ROW
++	vst1q_f32(&gm.m11, r1); vst1q_f32(&gm.m21, r2); vst1q_f32(&gm.m31, r3); vst1q_f32(&gm.m41, r4);
++	vst1q_f32(&dest->m11, r1); vst1q_f32(&dest->m21, r2); vst1q_f32(&dest->m31, r3); vst1q_f32(&dest->m41, r4);
++}
++#define PORT_NEON_MTXMUL 1
++
++/* startup check (port_gx_init): the NEON versions against the original
++ * scalar formulas, bit for bit, on pseudo-random matrices */
++static float st_rnd(unsigned *x) {
++	*x = *x * 1664525u + 1013904223u;
++	return ((float)(int)(*x >> 8) / 8388608.0f - 1.0f) * (float)(1 + (*x & 7) * 37);
++}
++int port_mtx_selftest(void) {
++	unsigned x = 12345u;
++	int t, i, bad = 0;
++	for (t = 0; t < 2000; t++) {
++		struct Mtx a, b, r1, r2;
++		float *pa = &a.m11, *pb = &b.m11;
++		for (i = 0; i < 16; i++) { pa[i] = st_rnd(&x); pb[i] = st_rnd(&x); }
++		NuMtxMulH(&r1, &a, &b);
++		r2.m11 = a.m14 * b.m41 + a.m13 * b.m31 + a.m11 * b.m11 + a.m12 * b.m21;
++		r2.m12 = a.m14 * b.m42 + a.m13 * b.m32 + a.m11 * b.m12 + a.m12 * b.m22;
++		r2.m13 = a.m14 * b.m43 + a.m13 * b.m33 + a.m11 * b.m13 + a.m12 * b.m23;
++		r2.m14 = a.m14 * b.m44 + a.m13 * b.m34 + a.m11 * b.m14 + a.m12 * b.m24;
++		r2.m21 = a.m24 * b.m41 + a.m23 * b.m31 + a.m21 * b.m11 + a.m22 * b.m21;
++		r2.m22 = a.m24 * b.m42 + a.m23 * b.m32 + a.m21 * b.m12 + a.m22 * b.m22;
++		r2.m23 = a.m24 * b.m43 + a.m23 * b.m33 + a.m21 * b.m13 + a.m22 * b.m23;
++		r2.m24 = a.m24 * b.m44 + a.m23 * b.m34 + a.m21 * b.m14 + a.m22 * b.m24;
++		r2.m31 = a.m34 * b.m41 + a.m33 * b.m31 + a.m31 * b.m11 + a.m32 * b.m21;
++		r2.m32 = a.m34 * b.m42 + a.m33 * b.m32 + a.m31 * b.m12 + a.m32 * b.m22;
++		r2.m33 = a.m34 * b.m43 + a.m33 * b.m33 + a.m31 * b.m13 + a.m32 * b.m23;
++		r2.m34 = a.m34 * b.m44 + a.m33 * b.m34 + a.m31 * b.m14 + a.m32 * b.m24;
++		r2.m41 = a.m44 * b.m41 + a.m43 * b.m31 + a.m41 * b.m11 + a.m42 * b.m21;
++		r2.m42 = a.m44 * b.m42 + a.m43 * b.m32 + a.m41 * b.m12 + a.m42 * b.m22;
++		r2.m43 = a.m44 * b.m43 + a.m43 * b.m33 + a.m41 * b.m13 + a.m42 * b.m23;
++		r2.m44 = a.m44 * b.m44 + a.m43 * b.m34 + a.m41 * b.m14 + a.m42 * b.m24;
++		if (memcmp(&r1, &r2, sizeof(r1))) bad++;
++		NuMtxMul(&r1, &a, &b);
++		r2.m11 = a.m13 * b.m31 + a.m11 * b.m11 + a.m12 * b.m21;
++		r2.m12 = a.m13 * b.m32 + a.m11 * b.m12 + a.m12 * b.m22;
++		r2.m13 = a.m13 * b.m33 + a.m11 * b.m13 + a.m12 * b.m23;
++		r2.m14 = 0.0f;
++		r2.m21 = a.m23 * b.m31 + a.m21 * b.m11 + a.m22 * b.m21;
++		r2.m22 = a.m23 * b.m32 + a.m21 * b.m12 + a.m22 * b.m22;
++		r2.m23 = a.m23 * b.m33 + a.m21 * b.m13 + a.m22 * b.m23;
++		r2.m24 = 0.0f;
++		r2.m31 = a.m33 * b.m31 + a.m31 * b.m11 + a.m32 * b.m21;
++		r2.m32 = a.m33 * b.m32 + a.m31 * b.m12 + a.m32 * b.m22;
++		r2.m33 = a.m33 * b.m33 + a.m31 * b.m13 + a.m32 * b.m23;
++		r2.m34 = 0.0f;
++		r2.m41 = a.m43 * b.m31 + a.m41 * b.m11 + a.m42 * b.m21 + b.m41;
++		r2.m42 = a.m43 * b.m32 + a.m41 * b.m12 + a.m42 * b.m22 + b.m42;
++		r2.m43 = a.m43 * b.m33 + a.m41 * b.m13 + a.m42 * b.m23 + b.m43;
++		r2.m44 = 1.0f;
++		if (memcmp(&r1, &r2, sizeof(r1))) bad++;
++	}
++	return bad;
++}
++#endif
++
++#ifndef PORT_NEON_MTXMUL
+ void NuMtxMul(struct Mtx* dest, struct Mtx* a, struct Mtx* b)
+ {
+ 	gm.m11 = a->m13 * b->m31 + a->m11 * b->m11 + a->m12 * b->m21;
+@@ -379,6 +470,8 @@ void NuMtxMulH(struct Mtx* dest, struct Mtx* a, struct Mtx* b)
+ 	dest->m44 = gm.m44;
+ }
+ 
++#endif /* PORT_NEON_MTXMUL */
++
+ void NuMtxMulR(struct Mtx* dest, struct Mtx* a, struct Mtx* b)
+ {
+ 	gm.m11 = a->m13 * b->m31 + a->m11 * b->m11 + a->m12 * b->m21;
 diff --git a/src/numath/nuquat.c b/src/numath/nuquat.c
 index 64a2d7a..9bcebdc 100644
 --- a/src/numath/nuquat.c
@@ -4978,7 +5554,7 @@ index b083bf8..a8e0e98 100644
      if (Level == 3) goto fade_50;
      goto check_vehicle;
 diff --git a/src/nuxbox/dummyfunc.c b/src/nuxbox/dummyfunc.c
-index 18d4ff2..54fa448 100644
+index 18d4ff2..7e6d305 100644
 --- a/src/nuxbox/dummyfunc.c
 +++ b/src/nuxbox/dummyfunc.c
 @@ -4,6 +4,13 @@
@@ -4995,7 +5571,18 @@ index 18d4ff2..54fa448 100644
  
  #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
  #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
-@@ -144,7 +151,11 @@ s32 NuRndrGScnObj(struct nugobj_s *gobj,struct numtx_s *wm) {
+@@ -45,6 +52,10 @@ s32 PadDemoEnd;
+ f32 gravdiv = 1.0f;
+ 
+ void *renderpsdma(s32 count, struct rdata_s *rdata, struct PartHeader_testretail *setup, struct numtl_s *mtl, float time, struct numtx_s *wm);
++#ifdef PORT
++#include "port_quads.h"
++void GS_DrawQuadListSetState(int nverts, int arg1);
++#endif
+ static void reverseendian32(char *value);
+ static void reverseendian16(short *value);
+ 
+@@ -144,7 +155,11 @@ s32 NuRndrGScnObj(struct nugobj_s *gobj,struct numtx_s *wm) {
    return NuRndrGobj(gobj,wm,NULL);
  }
  
@@ -5008,7 +5595,7 @@ index 18d4ff2..54fa448 100644
  unsigned char PS2_SCRATCH_BASE[16384];
  
  //MATCH NGC
-@@ -159,7 +170,11 @@ s32 addrAligned;
+@@ -159,7 +174,11 @@ s32 addrAligned;
  
      ps2_scratch_free = (s32 *)(addrAligned + sizeAligned);
      *(s32 *)(addrAligned + sizeAligned) = old;
@@ -5020,15 +5607,158 @@ index 18d4ff2..54fa448 100644
      return (void *)addrAligned;
  }
  
-@@ -1227,6 +1242,60 @@ void* renderpsdma(s32 count, struct rdata_s* rdata, struct PartHeader_testretail
+@@ -1201,9 +1220,21 @@ void* renderpsdma(s32 count, struct rdata_s* rdata, struct PartHeader_testretail
+     struct PartList_s * hpdat;
+ 
+ 
++#ifdef PORT
++    /* PORT: the calls come in runs of the same material (hub: 65 of 67 a
++     * frame). When the previous call drew with this material and nothing was
++     * drawn and no GX state changed since (port_gx_quads_state_kept), the
++     * state below is already in place: skip setting it again (~20 us a call). */
++    static struct numtl_s *ps_mtl; /* material of the last direct-path draw */
++    const s32 kept = mtl == ps_mtl && port_gx_quads_state_kept();
++    ps_mtl = NULL;
++#endif
+     grav /= gravdiv;
+     // GC chunks have no unpackdata header: debris starts right after dmadata
+     rdeb = (struct uv1deb*)rdata->unpackdata;
++#ifdef PORT
++    if (!kept) {
++#endif
+     ResetShaders();
+     GS_SetAlphaCompare(4, 0);
+     NuTexSetTexture(0, mtl->tid);
+@@ -1216,9 +1247,18 @@ void* renderpsdma(s32 count, struct rdata_s* rdata, struct PartHeader_testretail
+     }
+     GS_SetAlphaCompare(4, 0);
+     GS_SetZCompare(1, 0, GX_LEQUAL);
++#ifdef PORT
++    }
++#endif
+     GS_EnableLighting(0);
++#ifdef PORT
++    if (!kept) {
++#endif
+     SetVertexShader(0x142);
+     GS_LoadWorldMatrixIdentity();
++#ifdef PORT
++    }
++#endif
+     NuMtxCalcDebrisFaceOn(&debmtx);
+ 
+     u1 = setup->u0;
+@@ -1227,6 +1267,167 @@ void* renderpsdma(s32 count, struct rdata_s* rdata, struct PartHeader_testretail
      v1 = setup->v1;
  
      hpdat = setup->Data;
 +#ifdef PORT
 +    {
-+        /* PORT: same particles, one GX block per call instead of one per quad.
-+         * Each GXBegin costs a full block decode in the port (the particle
-+         * stage took ~11-13 ms a frame on the Vita with 2-3k quads). */
++        /* PORT: the quads go straight into the render batch as finished
++         * vertices (port_quads.h): no GX FIFO writes per vertex and no block
++         * decode (hub: 1946 quads in 67 calls cost 3.7 ms a frame that way,
++         * 5.8 ms with the state setup). The positions are the same float
++         * operations as DebMtxTransform, in the same order. */
++        const float m00 = debmtx._00, m01 = debmtx._01, m02 = debmtx._02;
++        const float m10 = debmtx._10, m11 = debmtx._11, m12 = debmtx._12;
++        const float m20 = debmtx._20, m21 = debmtx._21, m22 = debmtx._22;
++        const float wx = wm->_30, wy = wm->_31, wz = wm->_32;
++        struct uv1deb *rd;
++        struct uv1deb *act[32];
++        float ael[32];
++        s32 aix[32];
++        PortQuadVtx *qv = NULL;
++        s32 nq = 0, w = 0;
++        /* first pass: expire and collect the live particles, and start loading
++         * their shape entries (the particle data is usually not in the cache:
++         * ~1 us per particle when the loop waited for it) */
++        __builtin_prefetch(rdeb);
++        __builtin_prefetch(rdeb + 2);
++        for (i = 0, rd = rdeb; i < 32; i++, rd++) {
++            __builtin_prefetch(rd + 4);
++            if (rd->etime < 0.0f) {
++                continue;
++            }
++            elapsed = (time - rd->time);
++            index = (rd->etime * elapsed);
++            if (index > 0x3FU) {
++                rd->etime = -1.0f;
++                continue;
++            }
++            __builtin_prefetch(&hpdat[index]);
++            act[nq] = rd;
++            ael[nq] = elapsed;
++            aix[nq] = index;
++            nq++;
++        }
++        if (nq > 0) {
++            if (!kept) {
++                GS_DrawQuadListSetState(nq * 4, 1);
++            }
++            qv = port_gx_quads_begin(nq);
++        }
++        if (nq == 0 || qv != NULL) {
++            float tx = debmtx._30, ty = debmtx._31, tz = debmtx._32;
++            for (w = 0; w < nq; w++) {
++                float f11, x0, y0, z0, x1, y1, z1, x2, y2, z2;
++                const struct nuvec_s *vt;
++                u32 c;
++                s32 k;
++                PortQuadVtx *o = qv + w * 4;
++                rd = act[w];
++                elapsed = ael[w];
++                __builtin_prefetch(o + 8);
++                f11 = grav * elapsed;
++                pdat = &hpdat[aix[w]];
++                vt = pdat->vt;
++                tx = (rd->mx * elapsed + rd->x) + wx;
++                tz = (rd->mz * elapsed + rd->z) + wz;
++                ty = f11 * elapsed + ((rd->my * elapsed + rd->y) + wy);
++                x0 = vt[0].x * m00 + vt[0].y * m10 + vt[0].z * m20 + tx;
++                y0 = vt[0].x * m01 + vt[0].y * m11 + vt[0].z * m21 + ty;
++                z0 = vt[0].x * m02 + vt[0].y * m12 + vt[0].z * m22 + tz;
++                x1 = vt[1].x * m00 + vt[1].y * m10 + vt[1].z * m20 + tx;
++                y1 = vt[1].x * m01 + vt[1].y * m11 + vt[1].z * m21 + ty;
++                z1 = vt[1].x * m02 + vt[1].y * m12 + vt[1].z * m22 + tz;
++                x2 = vt[2].x * m00 + vt[2].y * m10 + vt[2].z * m20 + tx;
++                y2 = vt[2].x * m01 + vt[2].y * m11 + vt[2].z * m21 + ty;
++                z2 = vt[2].x * m02 + vt[2].y * m12 + vt[2].z * m22 + tz;
++                /* GX colour bytes r, g, b, a from the ARGB word */
++                c = (u32)pdat->colour;
++                c = (c & 0xFF00FF00u) | ((c >> 16) & 0xFFu) | ((c & 0xFFu) << 16);
++                o[0].pos[0] = x0; o[0].pos[1] = y0; o[0].pos[2] = z0;
++                o[1].pos[0] = x1; o[1].pos[1] = y1; o[1].pos[2] = z1;
++                o[2].pos[0] = x2; o[2].pos[1] = y2; o[2].pos[2] = z2;
++                o[3].pos[0] = (x2 - x1) + x0; o[3].pos[1] = (y2 - y1) + y0; o[3].pos[2] = (z2 - z1) + z0;
++                o[0].tex[0] = u1; o[0].tex[1] = v1;
++                o[1].tex[0] = u1; o[1].tex[1] = v2;
++                o[2].tex[0] = u2; o[2].tex[1] = v2;
++                o[3].tex[0] = u2; o[3].tex[1] = v1;
++                for (k = 0; k < 4; k++) {
++                    o[k].nrm[0] = o[k].nrm[1] = o[k].nrm[2] = 0.0f;
++                    memcpy(o[k].clr, &c, 4);
++                }
++            }
++            rdeb += 32;
++            debmtx._30 = tx;
++            debmtx._31 = ty;
++            debmtx._32 = tz;
++            if (qv != NULL) {
++                port_gx_quads_end(w);
++                ps_mtl = mtl;
++            }
++            {
++                extern unsigned port_ps_calls, port_ps_quads;
++                port_ps_calls++;
++                port_ps_quads += w;
++            }
++            GS_EnableLighting(1);
++            return rdeb;
++        }
++    }
++    {
++        /* recording GX calls (port_gx_quads_begin said no): one GX block per
++         * call instead of one per quad (a GXBegin costs a block decode) */
 +        struct nuvec_s qp[32][4];
 +        u32 qc[32];
 +        s32 nq = 0;
@@ -5062,6 +5792,11 @@ index 18d4ff2..54fa448 100644
 +                qc[nq++] = (u32)pdat->colour;
 +            }
 +        }
++        {
++            extern unsigned port_ps_calls, port_ps_quads;
++            port_ps_calls++;
++            port_ps_quads += nq;
++        }
 +        if (nq > 0) {
 +            GS_DrawQuadListBeginBlock(nq * 4, 1);
 +            for (i = 0; i < nq; i++) {
@@ -5081,7 +5816,7 @@ index 18d4ff2..54fa448 100644
      for (i = 0; i < 32; i++) {
          float zero = 0.0f;
          float neg_one = -1.0f;
-@@ -1435,8 +1504,16 @@ static s32 XboxEffectSystemInitialised;
+@@ -1435,8 +1636,16 @@ static s32 XboxEffectSystemInitialised;
  void InitXboxEffectSystem(s32 Level)
  {
    if (XboxEffectSystemInitialised == 0) {
@@ -5098,7 +5833,7 @@ index 18d4ff2..54fa448 100644
      NuWaterInit();
      NuGlassInit();
      XboxEffectSystemInitialised = 1;
-@@ -1456,8 +1533,14 @@ void InitXboxGSceneEffects(struct nugscn_s *gsc,union variptr_u *buffer,union va
+@@ -1456,8 +1665,14 @@ void InitXboxGSceneEffects(struct nugscn_s *gsc,union variptr_u *buffer,union va
  void CloseXboxEffectSystem(void)
  {
    if (XboxEffectSystemInitialised != 0) {
@@ -5113,11 +5848,30 @@ index 18d4ff2..54fa448 100644
      NuWaterClose();
      NuGlassClose();
      XboxEffectSystemInitialised = 0;
+@@ -1499,6 +1714,18 @@ void NuSceneAverageTextureSpaceVerts(struct nuscene_s *scene) {
+ 
+     gsc = scene->gscene;
+     numinst = gsc->numinstance;
++#ifdef PORT
++    /* PORT: every pair of instances (numinst^2 transforms and distances: 3.1 s
++     * of the jungle_r load on the Vita) only to call
++     * NuGobjAverageTextureSpaceVerts, which walks lists and does nothing (in
++     * the DOL too). What stays observable is the last pair's index in the
++     * globals, which nothing reads: set them the same way and skip the rest. */
++    if (numinst > 0) {
++        globalix1 = numinst - 1;
++        globalix2 = numinst - 1;
++    }
++    return;
++#endif
+         for(ix1 = 0; ix1 < numinst; ix1++) {
+                 for(ix2 = 0; ix2 < numinst; ix2++) {
+                     globalix1 = ix1;
 diff --git a/src/system/crashlib.c b/src/system/crashlib.c
-index a44697f..f069460 100644
+index a44697f..6be9f18 100644
 --- a/src/system/crashlib.c
 +++ b/src/system/crashlib.c
-@@ -16,20 +16,34 @@ struct nuvec_s* edmainQueryLocVec(void) {
+@@ -16,20 +16,49 @@ struct nuvec_s* edmainQueryLocVec(void) {
  }
  
  //MATCH GCN
@@ -5137,8 +5891,12 @@ index a44697f..f069460 100644
 +/* the game's timing bars feed the port's per-phase profile (port_video.c) */
 +extern unsigned long long port_prof_now(void);
 +unsigned long long port_tb_us[40];
++unsigned long long port_tb_nest[40]; /* mtlrender (slot 33) time spent inside each slot */
++unsigned long long port_tb_gx[40];   /* GX emulation on the game thread inside each slot, passes excluded */
 +unsigned int port_tb_n[40];
-+static unsigned long long port_tb_t0[40];
++static unsigned long long port_tb_t0[40], port_tb_m0[40], port_tb_mtl;
++static unsigned long long port_tb_g0[40], port_tb_gm0[40], port_tb_gxmtl;
++extern unsigned long long port_prof_gx_total(void);
 +#endif
 +
  //MATCH GCN
@@ -5146,27 +5904,54 @@ index a44697f..f069460 100644
      unsigned long time;
  
 +#ifdef PORT
-+    if ((unsigned)slotix < 40) port_tb_t0[slotix] = port_prof_now();
++    if (slotix == 31) {
++        /* the HUD scene starts: the port draws the 3D below it at a lower
++         * resolution (CWOC_RES3D) and the HUD at the native one */
++        extern void port_gx_hud_begin(void);
++        port_gx_hud_begin();
++    }
++    if ((unsigned)slotix < 40) {
++        port_tb_t0[slotix] = port_prof_now();
++        port_tb_m0[slotix] = port_tb_mtl;
++        port_tb_g0[slotix] = port_prof_gx_total();
++        port_tb_gm0[slotix] = port_tb_gxmtl;
++    }
 +    return;
 +#endif
      time = timeGetTime();
      timers[slotix].start = time;
  }
-@@ -40,6 +54,13 @@ void tbslotEnd(int tbh, int slotix) {
+@@ -40,6 +69,29 @@ void tbslotEnd(int tbh, int slotix) {
      unsigned long time;
      unsigned long elapsed;
  
 +#ifdef PORT
++    if (slotix == 9) {
++        /* main (translated from the PowerPC code): the world scene's drawing
++         * is done, NuWaterRender and its NuRndrEndScene come next. From here
++         * the GX thread records the rest of the frame (gx_rec.inc) */
++        extern void port_gx_rec_tail(void);
++        port_gx_rec_tail();
++    }
 +    if ((unsigned)slotix < 40) {
-+        port_tb_us[slotix] += port_prof_now() - port_tb_t0[slotix];
++        unsigned long long el = port_prof_now() - port_tb_t0[slotix];
++        port_tb_us[slotix] += el;
 +        port_tb_n[slotix]++;
++        unsigned long long g = port_prof_gx_total() - port_tb_g0[slotix];
++        if (slotix == 33) {
++            port_tb_mtl += el;
++            port_tb_gxmtl += g;
++        } else {
++            port_tb_nest[slotix] += port_tb_mtl - port_tb_m0[slotix];
++            port_tb_gx[slotix] += g - (port_tb_gxmtl - port_tb_gm0[slotix]);
++        }
 +    }
 +    return;
 +#endif
      time = timeGetTime();
      avg = timers[slotix].average;
      elapsed = time - timers[slotix].start;
-@@ -51,6 +72,9 @@ void tbslotEnd(int tbh, int slotix) {
+@@ -51,6 +103,9 @@ void tbslotEnd(int tbh, int slotix) {
  //MATCH GCN
  void DBTimerStart(int index) {
      unsigned long time;
@@ -5176,7 +5961,7 @@ index a44697f..f069460 100644
  
      time = timeGetTime();
      DBTimers[index].start = time;
-@@ -62,6 +86,9 @@ void DBTimerEnd(int index) {
+@@ -62,6 +117,9 @@ void DBTimerEnd(int index) {
      unsigned long avg;
      unsigned long time;
      unsigned long elapsed;
@@ -5186,7 +5971,7 @@ index a44697f..f069460 100644
  
      time = timeGetTime();
      avg = DBTimers[index].average;
-@@ -165,10 +192,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
+@@ -165,10 +223,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
                  *outbits = data2;
                  inbits16++;
                  inbits8 = (unsigned char*)outbits;
@@ -5205,7 +5990,7 @@ index a44697f..f069460 100644
                  outbits++;
              }
              outline += width;
-@@ -187,10 +222,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
+@@ -187,10 +253,18 @@ struct D3DTexture* NudxTx_Create(struct nutex_s* texture, s32 rendertargetflag)
                  data += 0xff000000;
                  *outbits = data;
                  inbits8 = (unsigned char*)outbits;
@@ -5239,7 +6024,7 @@ index dd8792b..d3ea6df 100644
 +#endif
  }
 diff --git a/src/system/gs/gs.c b/src/system/gs/gs.c
-index 8a24380..0c419a1 100644
+index 8a24380..0f5a3ed 100644
 --- a/src/system/gs/gs.c
 +++ b/src/system/gs/gs.c
 @@ -21,6 +21,18 @@
@@ -5388,6 +6173,77 @@ index 8a24380..0c419a1 100644
      GXSetProjection((float **)pMtx,GX_PERSPECTIVE);
      return;
  }
+@@ -449,6 +478,62 @@ void GS_LoadWorldMatrixIdentity(void) {
+ }
+ 
+ //NGC MATCH
++#if defined(PORT) && defined(__ARM_NEON)
++#include <arm_neon.h>
++/* PORT: once per drawn model. The GX matrix is rows 1-3 of
++ * MatReorder(world * view), i.e. columns 1, 2 and -3 of the product: computed
++ * straight from the columns of the world matrix with NEON, with the products
++ * and sums in MatMult's order (same rounding: identical matrix), without the
++ * copies, the scalar 4x4 product and the reorder. */
++void GS_SetWorldMatrix(struct _GSMATRIX *pMatrix) {
++  float M[3][4];
++  const float *v = (const float *)&GS_MatView;
++  float32x4x4_t c;
++
++  memcpy(GS_MatWorld, pMatrix, sizeof(float[4][4]));
++  c = vld4q_f32((const float *)GS_MatWorld); /* c.val[k] = column k+1 */
++#define WCOL(j) vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(c.val[0], v[0 + (j)]), c.val[1], v[4 + (j)]), \
++                                        c.val[2], v[8 + (j)]), c.val[3], v[12 + (j)])
++  vst1q_f32(M[0], WCOL(0));
++  vst1q_f32(M[1], WCOL(1));
++  vst1q_f32(M[2], vnegq_f32(WCOL(2)));
++#undef WCOL
++  GXLoadPosMtxImm(&M,0);
++  GXSetCurrentMtx(0);
++  GS_WorldMatIsIdentity = 0;
++  return;
++}
++
++/* startup check (port_gx_init): the fused matrix against MatMult + MatReorder */
++int port_gs_mtx_selftest(void) {
++  unsigned x = 777u;
++  int t, i, j, bad = 0;
++  float view[4][4];
++  memcpy(view, GS_MatView, sizeof(view));
++  for (t = 0; t < 2000; t++) {
++    struct _GSMATRIX w, ref;
++    float M[3][4], *pw = (float *)&w, *pv = (float *)GS_MatView;
++    const float *v;
++    float32x4x4_t c;
++    for (i = 0; i < 16; i++) {
++      x = x * 1664525u + 1013904223u; pw[i] = ((float)(int)(x >> 8) / 8388608.0f - 1.0f) * (float)(1 + (x & 7) * 37);
++      x = x * 1664525u + 1013904223u; pv[i] = ((float)(int)(x >> 8) / 8388608.0f - 1.0f) * (float)(1 + (x & 7) * 37);
++    }
++    ref = w;
++    MatMult(&ref, (struct _GSMATRIX *)GS_MatView);
++    MatReorder(&ref);
++    v = (const float *)GS_MatView;
++    c = vld4q_f32((const float *)&w);
++    vst1q_f32(M[0], vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(c.val[0], v[0]), c.val[1], v[4]), c.val[2], v[8]), c.val[3], v[12]));
++    vst1q_f32(M[1], vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(c.val[0], v[1]), c.val[1], v[5]), c.val[2], v[9]), c.val[3], v[13]));
++    vst1q_f32(M[2], vnegq_f32(vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vmulq_n_f32(c.val[0], v[2]), c.val[1], v[6]), c.val[2], v[10]), c.val[3], v[14])));
++    for (j = 0; j < 12; j++)
++      if (memcmp(&M[j / 4][j % 4], (float *)&ref + j, 4)) { bad++; break; }
++  }
++  memcpy(GS_MatView, view, sizeof(view));
++  return bad;
++}
++#else
+ void GS_SetWorldMatrix(struct _GSMATRIX *pMatrix) {
+   struct _GSMATRIX local_48;
+ 
+@@ -460,6 +545,7 @@ void GS_SetWorldMatrix(struct _GSMATRIX *pMatrix) {
+   GS_WorldMatIsIdentity = 0;
+   return;
+ }
++#endif
+ 
+ void GS_CopyTextureFromFB(void) {
+     return;
 diff --git a/src/system/gs/gs.h b/src/system/gs/gs.h
 index 955d883..6e77f6e 100644
 --- a/src/system/gs/gs.h
@@ -5427,7 +6283,7 @@ index 955d883..6e77f6e 100644
  struct _GXColor GS_BgColourBlack;
  
 diff --git a/src/system/gs/gsprim.c b/src/system/gs/gsprim.c
-index 3b0fdae..8f25b7e 100644
+index 3b0fdae..8cfb1ca 100644
 --- a/src/system/gs/gsprim.c
 +++ b/src/system/gs/gsprim.c
 @@ -36,6 +36,17 @@ u32 QuadListColour;
@@ -5491,7 +6347,48 @@ index 3b0fdae..8f25b7e 100644
      GXBegin(GX_TRIANGLES,GX_VTXFMT2,nverts);
  
      for (i = 0; i < nverts; i++) {
-@@ -492,6 +525,32 @@ void GS_SetQuadListRGBA(s32 r,s32 g,s32 b,s32 a) {
+@@ -450,6 +483,32 @@ void GS_DrawTriListTTL(struct _GS_VERTEXTL* vertlist, s16 nverts) {
+     }
+ }
+ 
++#ifdef PORT
++/* GS_DrawQuadListBeginBlock without the GXBegin (renderpsdma writes its quads
++ * straight into the render batch, port_quads.h) */
++void GS_DrawQuadListSetState(int nverts,int arg1) {
++  if (arg1 != 0) {
++    GS_SetLightingNone();
++  }
++  else {
++    TTLLights();
++  }
++  GXSetChanCtrl(GX_COLOR0A0,0,GX_SRC_REG,GX_SRC_VTX,0,GX_DF_NONE,GX_AF_NONE);
++  QBlockverts = nverts;
++  if (GS_CurrentVertDesc != 0x81) {
++    GS_CurrentVertDesc = 0x81;
++    GXClearVtxDesc();
++    GXSetVtxDesc(GX_VA_POS,GX_DIRECT);
++    GXSetVtxDesc(GX_VA_CLR0,GX_DIRECT);
++    GXSetVtxDesc(GX_VA_TEX0,GX_DIRECT);
++  }
++}
++
++void GS_DrawQuadListBeginBlock(int nverts,int arg1) {
++  GS_DrawQuadListSetState(nverts, arg1);
++  GXBegin(GX_QUADS,GX_VTXFMT1,(u16)nverts);
++}
++#else
+ //NGC MATCH
+ void GS_DrawQuadListBeginBlock(int nverts,int arg1) {
+   if (arg1 != 0) {
+@@ -470,6 +529,7 @@ void GS_DrawQuadListBeginBlock(int nverts,int arg1) {
+   GXBegin(GX_QUADS,GX_VTXFMT1,(u16)nverts);
+   return;
+ }
++#endif
+ 
+ //NGC MATCH
+ void GS_DrawQuadListSetVert(struct _GS_VECTOR3 *pos,float u,float v) {
+@@ -492,6 +552,32 @@ void GS_SetQuadListRGBA(s32 r,s32 g,s32 b,s32 a) {
  }
  
  //NGC MATCH
@@ -5524,7 +6421,7 @@ index 3b0fdae..8f25b7e 100644
  void GS_DrawTriListTSkin(struct _GS_VERTEXNORM *vertlist,s32 nverts,struct _GS_VERTEXSKIN *srcverts,short *pIndexData) {
    s32 i;
  
-@@ -507,6 +566,11 @@ void GS_DrawTriListTSkin(struct _GS_VERTEXNORM *vertlist,s32 nverts,struct _GS_V
+@@ -507,6 +593,11 @@ void GS_DrawTriListTSkin(struct _GS_VERTEXNORM *vertlist,s32 nverts,struct _GS_V
      }
  //  GXSetArray(10,&srcverts->nx,0x38); //alpha version
  //  GXSetArray(0xd,&srcverts->u,0x38); //alpha version
@@ -5636,10 +6533,10 @@ index 5dc1fb8..6281ae5 100644
      if (NUID - 0x270eU > 1) {
      NUID--;
 diff --git a/src/system/port.c b/src/system/port.c
-index 8547093..ad8cd7c 100644
+index 8547093..de42c8a 100644
 --- a/src/system/port.c
 +++ b/src/system/port.c
-@@ -337,6 +337,14 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+@@ -337,14 +337,28 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
          return;
      }
      shader = (enum shadertypes_e)geomitem->hShader;
@@ -5654,7 +6551,21 @@ index 8547093..ad8cd7c 100644
      mtl = geomitem->geom->mtl;
      vtxtype = geomitem->geom->vtxtype;
      if (mtl != NULL) {
-@@ -362,6 +370,25 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+         num_bumplights = mtl->attrib.lighting;
+     }
++#ifdef PORT
++    { extern void port_msub_begin(int k, int rate); port_msub_begin(13, 8); }
++#endif
+     if (num_bumplights != 2) {
+         NuLightSetStoredLights((s32)(geomitem->hdr).lights_index);
+     }
++#ifdef PORT
++    { extern void port_msub_end(int k); port_msub_end(13); }
++#endif
+     if ((shader != 0x80) && (vtxtype != Shaders[shader].vertshader)) {
+         shader = NO_SHADER;
+     }
+@@ -362,6 +376,25 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
          matWorld = *geomitem->mtx;
      }
  
@@ -5680,7 +6591,7 @@ index 8547093..ad8cd7c 100644
      NuMtxInv(&invWorld, &matWorld);
      NuMtxMulH(&matWorldView, &matWorld, &matView);
      NuMtxInv(&invWorldView, &matWorldView);
-@@ -375,6 +402,7 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+@@ -375,6 +408,7 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
      NuMtxTranspose(&matViewProj, &matViewProj);
      NuMtxTranspose(&matWorldView, &matWorldView);
      NuMtxTranspose(&matWorld, &matWorld);
@@ -5688,7 +6599,7 @@ index 8547093..ad8cd7c 100644
      GS_SetLightingNone();
      currentshader = shader;
  
-@@ -539,7 +567,11 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
+@@ -539,7 +573,11 @@ void SetupShaders(struct nugeomitem_s* geomitem) {
          case BLENDSKINGLASS2: // 18
              CV_WORLDVIEWPROJ = *(struct _GSMATRIX*) &matViewProj;
              CV_WORLDVIEW = *(struct _GSMATRIX*) &matWorld;

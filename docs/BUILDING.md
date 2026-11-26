@@ -15,8 +15,13 @@ Linux or WSL is recommended.
 - Git, CMake ≥ 3.16, Ninja, Python 3 with `pyelftools` (`pip install pyelftools`).
 - PS Vita: [VitaSDK](https://vitasdk.org) with the packages `vitaGL`,
   `vitashark`, `SceShaccCgExt`, `libmathneon`, `taihen` and `sdl2`
-  (`vdpm` installs them). For best performance rebuild vitaGL from source with
-  `make NO_DEBUG=1 HAVE_SHADER_CACHE=1` (tested: vitaGL commit `3dddc43`).
+  (`vdpm` installs them). `scripts/build_vita.sh` also builds its own vitaGL
+  (`scripts/build_vitagl.sh`: the VitaSDK package's commit with
+  `HAVE_SHADER_CACHE=1`, so shaders are compiled once per install, not once
+  per session) into `build-vitagl/`; `CWOC_SDK_VITAGL=1` links the VitaSDK
+  vitaGL instead. If `shader-seed/` exists (made on a console with
+  `scripts/shader_seed.py`: the game's GPU programs, compiled ahead of time)
+  it is packed into the VPK, and a first start compiles nothing it has.
 - PC (optional, for development): 32-bit `gcc-multilib`, SDL2 and OpenGL
   development packages (i386).
 

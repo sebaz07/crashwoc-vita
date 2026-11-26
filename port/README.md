@@ -61,7 +61,10 @@ the identity outside the port).
      - plain `char` is **signed** (the ProDG compiler emitted `lbz`+`extsb`).
    * read-only float constants are inlined from the DOL.
    * `PPC2C_TRACE=Func1,Func2` + `CWOC_PPCTRACE=1` logs basic blocks (debugging).
-   * hooks (`HOOKS` in ppc2c, `src/game/port_hooks.c`) can skip the logos / intro.
+   * hooks (`HOOKS` in ppc2c, `src/game/port_hooks.c`) can skip the logos / intro;
+     `src/game/port_hud.c` hooks the HUD (fps counter in the game font, widescreen
+     pause screen, PS Vita button icons in place of the font's GameCube buttons,
+     power-up texts rewritten for the Vita buttons).
 5. **GX → OpenGL** (`src/gx_gl.c`): FIFO decoding, TEV → generated GLSL,
    texture decoding, lighting channels. On Vita, vitaGL translates the GLSL.
 
@@ -112,12 +115,12 @@ Useful environment variables: `CWOC_SKIP_LOGOS=1`, `CWOC_INTRO=0` (skip the cut 
 `CWOC_WARP=level@frame` (request a level change), `CWOC_BATCHSTAT=1` (why GL
 batches break), `CWOC_IEEE=1` (PC: keep denormals),
 `CWOC_FIXEDTIME=1` (deterministic clock: 1/60 s per frame), `CWOC_AUDIO_DUMP=file.wav`, `CWOC_NOAUDIO=1`, `CWOC_DUMPSHADERS=<dir>`,
-`CWOC_MIPMAPS=0` (no mipmaps), `CWOC_LONGFRAME=ms` (log frames longer than ms
+`CWOC_MIPMAPS=0` (no mipmaps), `CWOC_FPS=1` (frames per second in the top-left corner, in the game's 3D font, when `<save dir>/fps.txt` does not exist; pause > OPTIONS > SHOW FPS; shown where the game draws its HUD, so not in cutscenes or loads; `=2`: on, and the plain counter drawn before every swap instead, also on loads, movies and cutscenes, for measurements), `CWOC_GCBUTTONS=1` (the font's GameCube button glyphs and the original texts instead of the PS Vita button icons and texts, `src/game/port_hud.c`), `CWOC_WIDEPAUSE=0` (widescreen: the pause screen's frame stays 4:3), `CWOC_RES3D=<percent>` (the 3D of game frames always at that resolution, HUD native; unset: 85 % only while the GPU sets the frame rate; 0: native), `CWOC_LONGFRAME=ms` (log frames longer than ms, default 100,
 with file-read time), `CWOC_CRELOG=1` (per-frame creature positions/AI state),
 `CWOC_DISPLAY=4:3|stretch|wide` + `CWOC_WINSIZE=960x544` (display mode; on the
-Vita SELECT + D-pad up cycles it, saved in `<save dir>/display.txt`),
+Vita pause > OPTIONS > SCREEN, saved in `<save dir>/display.txt`),
 `CWOC_TELEPORT=x,y,z@frame;bonus@frame` (move the player; `bonus` = the bonus round platform), `CWOC_BONUSLOG=1` (bonus/fall state), `CWOC_STRETCHLOG=1` (joint
-scale/extent of every skinned model drawn), `CWOC_NOPACE=1` (no frame pacing), `CWOC_PACESLEEP=1` (frame lock: hold frames to whole 1/60 s; Vita: SELECT + D-pad down),
+scale/extent of every skinned model drawn), `CWOC_NOPACE=1` (no frame pacing), `CWOC_PACESLEEP=1` (30 fps lock when `<save dir>/framelock.txt` does not exist: the display queue shows every frame for two vblanks and the game runs 2 ticks a frame; Vita: pause > OPTIONS > FRAME RATE),
 `CWOC_PACELOG=1` (log the pacing per frame), `CWOC_NOFUSE=1` (original two-pass
 skinning), `CWOC_RTXF=0` (view transforms on the game thread), `CWOC_RTSKIN=0` (skinning on the game thread), `CWOC_RTCOPY=0` (indexed ranges and static skins converted on the game thread), `CWOC_IDXCACHE=0` (no index-list cache), `CWOC_GPURING=0` (Vita: vitaGL client arrays instead of the GPU vertex ring; PC `=1` tests the ring); build time: `PPC2C_FLOAT=0` (no single-precision shadows in ppc2c); the log prints `tb ms/frame:` (game phases), `CWOC_JUMPLOG=1`,
 `CWOC_DWALOG=1` (glitch hunting), `CWOC_SHOT_FROM=n` (screenshots from frame n).
@@ -134,7 +137,7 @@ Vita: install `crashwoc.vpk`, copy the disc's `files/` directory to
 `ux0:data/crashwoc/files/` and make sure `ur0:data/libshacccg.suprx` exists
 (vitaGL compiles shaders at runtime; extract it with ShaRKBrew). Log:
 `ux0:data/crashwoc/crashwoc.log`. Controls: Cross = A (jump), Square = B (spin),
-Circle = X, Triangle = Y, L/R, Select = Z, Start, left stick.
+Circle = X, Triangle = Z (tiptoe), Select = Y (shows the HUD counters), L/R, Start, left stick.
 
 ## Known issues / next steps
 

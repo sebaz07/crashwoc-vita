@@ -3,6 +3,9 @@
 #include "port.h"
 #ifdef PORT_VITA
 #include <psp2/ctrl.h>
+#ifdef PORT_VITA
+#include <psp2/kernel/sysmem.h>
+#endif
 #else
 #include <SDL2/SDL.h>
 #endif
@@ -31,8 +34,9 @@ typedef struct {
 #define PAD_BUTTON_START 0x1000
 
 #ifdef PORT_VITA
-/* PS Vita: built-in controls. Cross=A, Circle=B, Square=X, Triangle=Y,
- * L/R = triggers, SELECT = Z, left stick = main stick, right stick = C stick. */
+/* PS Vita: built-in controls. Cross = A, Square = B, Circle = X,
+ * Triangle = Z, Select = Y, L/R = triggers, left stick = main stick, right
+ * stick = C stick (which the game never reads). */
 int port_frame_count(void);
 static void script_apply_fwd(PortPADStatus *s);
 
@@ -58,30 +62,19 @@ unsigned int PADRead(PortPADStatus *status) {
     for (i = 0; i < 4; i++) { memset(&status[i], 0, sizeof(*status)); status[i].err = -1; }
     s->err = 0;
     sceCtrlPeekBufferPositive(0, &c, 1);
-    { /* SELECT + D-pad up: next display mode (port_video.c); hidden from the game */
-        static int combo_held;
-        extern void port_display_cycle(void);
-        int combo = (c.buttons & SCE_CTRL_SELECT) && (c.buttons & SCE_CTRL_UP);
-        if (combo && !combo_held) port_display_cycle();
-        combo_held = combo;
-        if (combo) c.buttons &= ~(SCE_CTRL_SELECT | SCE_CTRL_UP);
-    }
-    { /* SELECT + D-pad down: frame lock on/off (port_os.c) */
-        static int lock_held;
-        extern void port_pace_lock_toggle(void);
-        int combo = (c.buttons & SCE_CTRL_SELECT) && (c.buttons & SCE_CTRL_DOWN);
-        if (combo && !lock_held) port_pace_lock_toggle();
-        lock_held = combo;
-        if (combo) c.buttons &= ~(SCE_CTRL_SELECT | SCE_CTRL_DOWN);
-    }
+    /* (screen mode and frame lock used to be SELECT + D-pad up/down, which
+     * clashed with overlay plugins: they are in pause > OPTIONS now) */
     if (c.buttons & SCE_CTRL_CROSS) s->button |= PAD_BUTTON_A;
     /* the game maps GC A/X/B/Y to the PS2 cross/circle/square/triangle bits
      * (XInputGetState + the padmap code), so B is the spin: put it on Square */
     if (c.buttons & SCE_CTRL_SQUARE) s->button |= PAD_BUTTON_B;
     if (c.buttons & SCE_CTRL_CIRCLE) s->button |= PAD_BUTTON_X;
-    if (c.buttons & SCE_CTRL_TRIANGLE) s->button |= PAD_BUTTON_Y;
+    /* Z is only the tiptoe (sneak shoes, held): on Triangle, under the thumb
+     * of the other moves. Y only shows the HUD counters while held (and is
+     * not used in menus): on Select */
+    if (c.buttons & SCE_CTRL_TRIANGLE) s->button |= PAD_TRIGGER_Z;
     if (c.buttons & SCE_CTRL_START) s->button |= PAD_BUTTON_START;
-    if (c.buttons & SCE_CTRL_SELECT) s->button |= PAD_TRIGGER_Z;
+    if (c.buttons & SCE_CTRL_SELECT) s->button |= PAD_BUTTON_Y;
     if (c.buttons & SCE_CTRL_LTRIGGER) { s->button |= PAD_TRIGGER_L; s->triggerL = 255; }
     if (c.buttons & SCE_CTRL_RTRIGGER) { s->button |= PAD_TRIGGER_R; s->triggerR = 255; }
     if (c.buttons & SCE_CTRL_UP) s->button |= PAD_BUTTON_UP;
@@ -92,6 +85,26 @@ unsigned int PADRead(PortPADStatus *status) {
     s->stickY = vaxis(c.ly, 1);
     s->substickX = vaxis(c.rx, 0);
     s->substickY = vaxis(c.ry, 1);
+    {
+        /* CWOC_PADOFF=1 (unattended measurements): only the scripted input
+         * (CWOC_INPUT), so a touched console or a drifting stick cannot move
+         * Crash during a benchmark */
+        static int off = -1;
+        if (off < 0) off = getenv("CWOC_PADOFF") && getenv("CWOC_PADOFF")[0] == '1';
+        if (off) {
+            /* say when the real controls were not at rest (a hand on the
+             * console, or stick drift past the dead zone) */
+            static unsigned n_log;
+            if ((c.buttons || s->stickX || s->stickY || s->substickX || s->substickY) && n_log < 20 &&
+                port_frame_count() % 60 == 0) {
+                n_log++;
+                port_log("pad: real input ignored (CWOC_PADOFF) at frame %d: buttons %08x, sticks %d,%d %d,%d (raw %u,%u %u,%u)",
+                         port_frame_count(), c.buttons, s->stickX, s->stickY, s->substickX, s->substickY, c.lx, c.ly, c.rx, c.ry);
+            }
+            memset(s, 0, sizeof(*s));
+            s->err = 0;
+        }
+    }
     script_apply_fwd(s);
     return 0x80000000u;
 }
@@ -216,9 +229,45 @@ unsigned int PADRead(PortPADStatus *status) {
 }
 #endif
 
+#ifdef PORT_VITA
+/* Rumble. The handheld Vita has no motor; a PS TV's DualShock 3 / 4 has
+ * two. The game turns the motor on and off (Game.vibration, creature.c: the
+ * GameCube's motor is on or off, RumbleController sends only the changes),
+ * here on the first paired DualShock (ports 1-4), at a fixed strength.
+ * port_vibration_supported() also hides the option on the handheld
+ * (port_hooks.c). */
+int port_vibration_supported(void) {
+    static int tv = -1;
+    if (tv < 0) {
+        tv = sceKernelIsPSVitaTV() > 0;
+        port_log("pad: %s", tv ? "PS TV: vibration on a DualShock" : "handheld: no vibration (option hidden)");
+    }
+    return tv;
+}
+
+static int dualshock_port(void) {
+    SceCtrlPortInfo pi;
+    int p;
+    if (sceCtrlGetControllerPortInfo(&pi) < 0) return -1;
+    for (p = 1; p < 5; p++)
+        if (pi.port[p] == SCE_CTRL_TYPE_DS3 || pi.port[p] == SCE_CTRL_TYPE_DS4) return p;
+    return -1;
+}
+#endif
+
 void PADControlMotor(int chan, unsigned int cmd) {
 #ifdef PORT_VITA
-    (void)chan; (void)cmd;
+    static int on, port = -1;
+    SceCtrlActuator a;
+    int want = cmd == 1;
+    if (chan != 0 || want == on || !port_vibration_supported()) return;
+    on = want;
+    if (on) port = dualshock_port(); /* the controller in use now; stop goes to the same one */
+    if (port < 0) return;
+    memset(&a, 0, sizeof(a));
+    a.small = on ? 0xc0 : 0;
+    a.large = on ? 0xc0 : 0;
+    sceCtrlSetActuator(port, &a);
 #else
     if (chan == 0 && g_ctrl) SDL_GameControllerRumble(g_ctrl, cmd == 1 ? 0xC000 : 0, cmd == 1 ? 0xC000 : 0, 100);
 #endif

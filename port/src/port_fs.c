@@ -24,7 +24,7 @@
 static char g_root[512];
 static char g_save[512];
 
-struct fs_entry { char *key; char *path; };
+struct fs_entry { char *key; char *path; long size; };
 static struct fs_entry *g_index;
 static int g_index_count, g_index_cap;
 
@@ -41,7 +41,7 @@ static void lower_norm(char *dst, const char *src, size_t cap) {
     dst[n] = 0;
 }
 
-static void index_add(const char *rel, const char *full) {
+static void index_add(const char *rel, const char *full, long size) {
     char key[512];
     if (g_index_count == g_index_cap) {
         g_index_cap = g_index_cap ? g_index_cap * 2 : 4096;
@@ -50,6 +50,7 @@ static void index_add(const char *rel, const char *full) {
     lower_norm(key, rel, sizeof(key));
     g_index[g_index_count].key = strdup(key);
     g_index[g_index_count].path = strdup(full);
+    g_index[g_index_count].size = size;
     g_index_count++;
 }
 
@@ -65,11 +66,17 @@ static void index_dir(const char *full, const char *rel, int depth) {
         if (e->d_name[0] == '.') continue;
         snprintf(f2, sizeof(f2), "%s/%s", full, e->d_name);
         snprintf(r2, sizeof(r2), "%s%s%s", rel, rel[0] ? "/" : "", e->d_name);
+#ifdef PORT_VITA
+        /* the entry carries its stat: no stat() per file (2618 at the start) */
+        st.st_mode = SCE_S_ISDIR(e->d_stat.st_mode) ? S_IFDIR : S_IFREG;
+        st.st_size = (off_t)e->d_stat.st_size;
+#else
         if (stat(f2, &st) != 0) continue;
+#endif
         if (S_ISDIR(st.st_mode))
             index_dir(f2, r2, depth + 1);
         else
-            index_add(r2, f2);
+            index_add(r2, f2, (long)st.st_size);
     }
     closedir(d);
 }
@@ -83,9 +90,14 @@ void port_fs_init(void) {
     const char *s = getenv("CWOC_SAVE");
     snprintf(g_root, sizeof(g_root), "%s", r ? r : DEFAULT_DATA_ROOT);
     snprintf(g_save, sizeof(g_save), "%s", s ? s : DEFAULT_SAVE_ROOT);
-    index_dir(g_root, "", 0);
-    qsort(g_index, g_index_count, sizeof(*g_index), cmp_entry);
-    port_log("fs: data root '%s' indexed %d files; save dir '%s'", g_root, g_index_count, g_save);
+    {
+        uint64_t port_prof_now(void);
+        uint64_t t0 = port_prof_now();
+        index_dir(g_root, "", 0);
+        qsort(g_index, g_index_count, sizeof(*g_index), cmp_entry);
+        port_log("fs: data root '%s' indexed %d files in %.0f ms; save dir '%s'", g_root, g_index_count,
+                 (port_prof_now() - t0) / 1000.0, g_save);
+    }
     if (g_index_count == 0)
         port_log("fs: WARNING no game files found. Copy the disc 'files' folder to %s", g_root);
 #ifdef PORT_VITA
@@ -98,20 +110,31 @@ void port_fs_init(void) {
 const char *port_data_root(void) { return g_root; }
 const char *port_save_dir(void) { return g_save; }
 
-/* Returns the host path for a console-relative path, or NULL. */
-const char *port_fs_resolve(const char *name) {
+static const struct fs_entry *fs_find(const char *name) {
     char key[512];
-    struct fs_entry probe, *hit;
+    struct fs_entry probe;
     if (!name) return NULL;
     if ((name[0] == 'z' || name[0] == 'Z') && name[1] == ':') name += 2;
     lower_norm(key, name, sizeof(key));
     probe.key = key;
-    hit = bsearch(&probe, g_index, g_index_count, sizeof(*g_index), cmp_entry);
+    return bsearch(&probe, g_index, g_index_count, sizeof(*g_index), cmp_entry);
+}
+
+/* Returns the host path for a console-relative path, or NULL. */
+const char *port_fs_resolve(const char *name) {
+    const struct fs_entry *hit = fs_find(name);
     return hit ? hit->path : NULL;
 }
 
+/* Size of a game file from the index (-1: none), for NuFileSize: no open */
+long port_fs_size(const char *name) {
+    const struct fs_entry *hit = fs_find(name);
+    return hit ? hit->size : -1;
+}
+
 uint64_t port_io_us, port_io_bytes; /* file read statistics (long-frame log) */
-int port_io_files;
+uint64_t port_io_open_us;           /* time in opens (resolve, open, size) */
+int port_io_files;                  /* files opened */
 uint64_t port_prof_now(void);
 
 /* fread with timing, used by NuFileRead */
@@ -145,15 +168,36 @@ FILE *port_fopen(const char *name, const char *mode) {
         port_log("fs: missing '%s'", name);
         return NULL;
     }
-    f = fopen(p, mode ? mode : "rb");
-    port_log("fs: open '%s' -> '%s'%s", name, p, f ? "" : " FAILED");
-    if (f) {
-        /* fopen_NGC (system/gc/fs.c) left the size in filelength; NuFParOpen
-         * reads it, so text scripts (texture animations .ats) parsed as empty */
-        extern unsigned int filelength;
-        fseek(f, 0, SEEK_END);
-        filelength = (unsigned int)ftell(f);
-        fseek(f, 0, SEEK_SET);
+    {
+        /* CWOC_FSLOG=1: log every open (each log line is a write + flush on
+         * the memory card: ~600 a level load); CWOC_FSBUF=<KB>: stdio read
+         * buffer (default 128; newlib's 1 KB turned each 64 KB NuFileRead
+         * chunk into ~64 sceIoRead calls); 0 = newlib's default */
+        static int fslog = -1, fsbuf = -1;
+        uint64_t t0 = port_prof_now();
+        if (fslog < 0) fslog = getenv("CWOC_FSLOG") ? atoi(getenv("CWOC_FSLOG")) : 0;
+        if (fsbuf < 0) fsbuf = getenv("CWOC_FSBUF") ? atoi(getenv("CWOC_FSBUF")) : 128;
+        f = fopen(p, mode ? mode : "rb");
+        if (fslog == 2) {
+            /* CWOC_FSLOG=2: time since the previous open, to see where a
+             * load spends its CPU (the gap before an open is the processing
+             * of what was read before it) */
+            static uint64_t prev;
+            port_log("fs: +%.1f ms open '%s'%s", prev ? (t0 - prev) / 1000.0 : 0.0, name, f ? "" : " FAILED");
+            prev = t0;
+        } else if (fslog || !f)
+            port_log("fs: open '%s' -> '%s'%s", name, p, f ? "" : " FAILED");
+        if (f) {
+            /* fopen_NGC (system/gc/fs.c) left the size in filelength; NuFParOpen
+             * reads it, so text scripts (texture animations .ats) parsed as empty */
+            extern unsigned int filelength;
+            if (fsbuf > 0) setvbuf(f, NULL, _IOFBF, (size_t)fsbuf * 1024);
+            fseek(f, 0, SEEK_END);
+            filelength = (unsigned int)ftell(f);
+            fseek(f, 0, SEEK_SET);
+        }
+        port_io_files++;
+        port_io_open_us += port_prof_now() - t0;
     }
     return f;
 }

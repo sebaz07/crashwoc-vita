@@ -1,0 +1,122 @@
+diff --git a/source/custom_shaders.c b/source/custom_shaders.c
+index f5b5ccb..01613c2 100644
+--- a/source/custom_shaders.c
++++ b/source/custom_shaders.c
+@@ -35,6 +35,24 @@
+ #include "utils/xxhash_utils.h"
+ #ifdef HAVE_SHADER_CACHE
+ char vgl_shader_cache_path[256];
++char vgl_shader_cache_seed[256]; // read-only fallback with the same layout (vglSetShaderCacheSeedPath), "" = none
++
++#ifdef HAVE_SHADER_CACHE
++// a cached shader file: the cache first, then the same name under the seed
++// (e.g. shaders shipped in app0:, compiled ahead of time)
++static SceUID cache_open(const char *fname) {
++	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
++	if (f < 0 && vgl_shader_cache_seed[0]) {
++		size_t n = strlen(vgl_shader_cache_path);
++		char alt[256];
++		if (!strncmp(fname, vgl_shader_cache_path, n) && strlen(vgl_shader_cache_seed) + strlen(fname + n) < sizeof(alt)) {
++			sprintf(alt, "%s%s", vgl_shader_cache_seed, fname + n);
++			f = sceIoOpen(alt, SCE_O_RDONLY, 0777);
++		}
++	}
++	return f;
++}
++#endif
+ #endif
+ #ifdef HAVE_TEX_CACHE
+ char vgl_file_cache_path[256];
+@@ -851,6 +869,9 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
+ 	sceIoMkdir(cache_fname, 0777);
+ 	cache_fname[fname_len - 21] = '/';
+ 	SceUID f = sceIoOpen(cache_fname, SCE_O_CREAT | SCE_O_WRONLY | SCE_O_TRUNC, 0777);
++	if (f < 0) {
++		return;
++	}
+ 	size_t sz;
+ 	void *buf = serialize_shader(NULL, &sz, s, save_bindings);
+ 	sceIoWrite(f, buf, sz);
+@@ -2110,7 +2131,7 @@ void glCompileShader(GLuint handle) {
+ 	uint64_t hash = XXH3_64bits(s->source, s->size);
+ 	uint8_t subdir_hash = hash >> 56;
+ 	int fname_len = sprintf(fname, "%s/%s/%02X/%016llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
+-	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
++	SceUID f = cache_open(fname);
+ 	if (f >= 0) {
+ 		vgl_free(s->source);
+ 		s->source = NULL;
+@@ -2516,7 +2537,7 @@ void glLinkProgram(GLuint progr) {
+ 			uint64_t hash = XXH3_64bits(p->vshader->source, p->vshader->size);
+ 			uint8_t subdir_hash = hash >> 56;
+ 			fname_len = sprintf(vert_fname, "%s/v/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
+-			SceUID f = sceIoOpen(vert_fname, SCE_O_RDONLY, 0777);
++			SceUID f = cache_open(vert_fname);
+ 			if (f >= 0) {
+ 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
+ 				sceIoLseek(f, 0, SCE_SEEK_SET);
+@@ -2531,7 +2552,7 @@ void glLinkProgram(GLuint progr) {
+ 			uint64_t hash = XXH3_64bits(p->fshader->source, p->fshader->size);
+ 			uint8_t subdir_hash = hash >> 56;
+ 			fname_len = sprintf(frag_fname, "%s/f/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
+-			SceUID f = sceIoOpen(frag_fname, SCE_O_RDONLY, 0777);
++			SceUID f = cache_open(frag_fname);
+ 			if (f >= 0) {
+ 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
+ 				sceIoLseek(f, 0, SCE_SEEK_SET);
+diff --git a/source/shared.h b/source/shared.h
+index 29880e3..7232c17 100644
+--- a/source/shared.h
++++ b/source/shared.h
+@@ -304,6 +304,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
+ #ifdef HAVE_SHADER_CACHE
+ #define SHADER_CACHE_MAGIC 5
+ extern char vgl_shader_cache_path[256];
++extern char vgl_shader_cache_seed[256];
+ #endif
+ 
+ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used
+diff --git a/source/vgl.c b/source/vgl.c
+index 779c095..ea27591 100644
+--- a/source/vgl.c
++++ b/source/vgl.c
+@@ -161,6 +161,10 @@ static uint8_t *circular_data_pool_limit;
+ #endif
+ uint32_t circular_data_pool_size = CIRCULAR_POOL_SIZE_DEF;
+ uint8_t *vgl_reserve_data_pool(uint32_t size) {
++	// keep every reservation 8-byte aligned: an odd-sized one (16-bit indices)
++	// left the next float data misaligned (glBlitFramebuffer's vertices: a
++	// data abort on the console)
++	size = (size + 7) & ~7u;
+ #ifndef CIRCULAR_POOL_SPEEDHACK
+ 	uint8_t *res = circular_data_pool_ptr[vgl_circular_idx];
+ 	circular_data_pool_ptr[vgl_circular_idx] += size;
+@@ -859,6 +863,15 @@ void vglSetShaderCachePath(const char *path) {
+ #endif
+ }
+ 
++void vglSetShaderCacheSeedPath(const char *path) {
++#ifdef HAVE_SHADER_CACHE
++	if (path && path[0] && strlen(path) < sizeof(vgl_shader_cache_seed) - 8)
++		sprintf(vgl_shader_cache_seed, "%s/v%d", path, SHADER_CACHE_MAGIC);
++	else
++		vgl_shader_cache_seed[0] = 0;
++#endif
++}
++
+ void vglSetShaderAssociationPath(const char *path) {
+ 	shark_set_shader_association_path(path);
+ }
+diff --git a/source/vitaGL.h b/source/vitaGL.h
+index 332d7f4..4920507 100644
+--- a/source/vitaGL.h
++++ b/source/vitaGL.h
+@@ -1290,6 +1290,8 @@ void vglSetShaderAssociationPath(const char *path);
+ 
+ // Overloads the shader cache path when HAVE_SHADER_CACHE=1 is used. Must be called before vglInit*. Default value: ux0:data/shader_cache.
+ void vglSetShaderCachePath(const char *path);
++// A read-only fallback for the shader cache (same layout as the cache root), e.g. shaders shipped in app0:. Requires HAVE_SHADER_CACHE.
++void vglSetShaderCacheSeedPath(const char *path);
+ 
+ // Overloads the default vitaGL boot splashscreen with a custom one. Not compatible with NO_SPLASHSCREEN=1.
+ void vglSetupCustomSplashscreen(vglSplashCallback init_callback, vglSplashCallback term_callback, vglSplashCallback main_callback, GLboolean clear_screen);
